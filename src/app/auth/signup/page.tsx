@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+export const dynamic = "force-dynamic";
+
 export default function SignupPage() {
   const supabase = createClient();
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "" });

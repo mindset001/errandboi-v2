@@ -10,6 +10,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import PlacesAutocomplete from "@/components/ui/PlacesAutocomplete";
 
+export const dynamic = "force-dynamic";
+
 interface Location { address: string; lat: number; lng: number }
 
 const COMMON_MARKETS = [

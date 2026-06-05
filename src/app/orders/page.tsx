@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import Badge from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function OrdersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

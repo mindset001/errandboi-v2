@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import DriverClient from "./DriverClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function DriverDashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

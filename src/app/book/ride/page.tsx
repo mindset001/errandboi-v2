@@ -9,6 +9,8 @@ import { estimateFares, haversineDistance, formatCurrency, generateReference } f
 import Button from "@/components/ui/Button";
 import PlacesAutocomplete from "@/components/ui/PlacesAutocomplete";
 
+export const dynamic = "force-dynamic";
+
 interface Location { address: string; lat: number; lng: number }
 
 function RideBookingForm() {

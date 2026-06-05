@@ -8,6 +8,8 @@ import RatingForm from "./RatingForm";
 import TrackingMap from "./TrackingMap";
 import { cancelOrder } from "./cancel-action";
 
+export const dynamic = "force-dynamic";
+
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
