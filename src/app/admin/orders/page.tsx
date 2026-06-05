@@ -3,6 +3,8 @@ import { formatCurrency } from "@/lib/utils";
 import { OrderStatus } from "@/types";
 import { updateOrderStatus, assignDriver } from "./actions";
 
+export const dynamic = "force-dynamic";
+
 const STATUS_OPTIONS: OrderStatus[] = ["pending", "accepted", "in_progress", "completed", "cancelled"];
 
 const statusStyle: Record<string, string> = {

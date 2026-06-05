@@ -3,6 +3,8 @@ import { formatCurrency } from "@/lib/utils";
 import { Package, Users, Truck, TrendingUp, Clock, CheckCircle, XCircle } from "lucide-react";
 import RevenueChart from "./RevenueChart";
 
+export const dynamic = "force-dynamic";
+
 function buildDailyData(orders: { created_at: string; fare: number | null; total: number | null }[]) {
   const days = 14;
   return Array.from({ length: days }, (_, i) => {

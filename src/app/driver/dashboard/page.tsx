@@ -19,7 +19,7 @@ export default async function DriverDashboardPage() {
     // Driver signed up before auto-create was in place — create their pending record now
     const admin = createAdminClient();
     const meta = user.user_metadata ?? {};
-    await admin.from("drivers").insert({
+    const { error: insertError } = await admin.from("drivers").insert({
       full_name: meta.full_name || "Driver",
       phone: meta.phone || "",
       vehicle_type: "bike",
@@ -29,6 +29,17 @@ export default async function DriverDashboardPage() {
       status: "pending",
       auth_user_id: user.id,
     });
+
+    if (insertError) {
+      return (
+        <Screen emoji="⚠️" title="Database Setup Incomplete">
+          The driver database migration hasn&apos;t been run yet. Ask the admin to run{" "}
+          <code className="text-orange-400">supabase/driver-auth.sql</code> in the Supabase SQL Editor.
+          <p className="text-slate-600 text-xs mt-2 font-mono break-all">{insertError.message}</p>
+        </Screen>
+      );
+    }
+
     redirect("/driver/onboarding");
   }
 

@@ -4,17 +4,15 @@ import { useEffect } from "react";
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js", { scope: "/" })
-        .then((reg) => {
-          // Check for updates on each page load
-          reg.update();
-        })
-        .catch(() => {
-          // SW registration failure is non-fatal
-        });
-    }
+    // Only register in production — in dev the SW caches stale redirects
+    // and makes debugging impossible.
+    if (process.env.NODE_ENV !== "production") return;
+    if (!("serviceWorker" in navigator)) return;
+
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then((reg) => reg.update())
+      .catch(() => {});
   }, []);
 
   return null;

@@ -1,31 +1,25 @@
 import { ImageResponse } from "next/og";
 
-export const dynamic = "force-static";
 export const contentType = "image/png";
+export const size = { width: 192, height: 192 };
 
-// Renders both 192 and 512 depending on ?size= param
-export default async function Icon({ searchParams }: { searchParams: Promise<{ size?: string }> }) {
-  const { size } = await searchParams;
-  const px = size === "512" ? 512 : 192;
-  const radius = Math.round(px * 0.22);
-  const fontSize = Math.round(px * 0.52);
-
+export default function Icon() {
   return new ImageResponse(
     (
       <div
         style={{
-          width: px,
-          height: px,
+          width: 192,
+          height: 192,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           background: "#f97316",
-          borderRadius: radius,
+          borderRadius: 42,
         }}
       >
-        <span style={{ fontSize, lineHeight: 1 }}>🛵</span>
+        <span style={{ fontSize: 100, lineHeight: 1 }}>🛵</span>
       </div>
     ),
-    { width: px, height: px }
+    { width: 192, height: 192 }
   );
 }

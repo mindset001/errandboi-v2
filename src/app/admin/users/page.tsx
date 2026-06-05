@@ -1,6 +1,8 @@
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { formatCurrency } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminUsersPage() {
   const supabase = createClient();
 

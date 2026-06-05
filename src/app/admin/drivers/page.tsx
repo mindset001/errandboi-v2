@@ -3,6 +3,8 @@ import { addDriver, toggleDriverAvailability, deleteDriver, approveDriver, rejec
 import { linkDriverAccount } from "./link-action";
 import { PlusCircle, Trash2, Link, CheckCircle, XCircle } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDriversPage() {
   const supabase = createClient();
   const { data: drivers } = await supabase

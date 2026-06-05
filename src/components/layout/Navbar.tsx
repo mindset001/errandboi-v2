@@ -55,6 +55,9 @@ export default function Navbar({ user }: NavbarProps) {
             </>
           ) : (
             <div className="flex items-center gap-3">
+              <Link href="/driver/login" className="text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-orange-400 transition">
+                🏍️ Driver Portal
+              </Link>
               <Link href="/auth/login">
                 <Button variant="outline" size="sm">Login</Button>
               </Link>
@@ -90,6 +93,7 @@ export default function Navbar({ user }: NavbarProps) {
             </>
           ) : (
             <div className="flex gap-3">
+              <Link href="/driver/login" className="font-medium text-gray-600 dark:text-slate-300" onClick={() => setOpen(false)}>🏍️ Driver Portal</Link>
               <Link href="/auth/login" onClick={() => setOpen(false)}>
                 <Button variant="outline" size="sm">Login</Button>
               </Link>
