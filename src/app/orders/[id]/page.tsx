@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import Navbar from "@/components/layout/Navbar";
 import Badge from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Phone, Star } from "lucide-react";
 import RatingForm from "./RatingForm";
+import TrackingMap from "./TrackingMap";
 import { cancelOrder } from "./cancel-action";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +15,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!user) redirect("/auth/login");
 
   const [{ data: order }, { data: rating }] = await Promise.all([
-    supabase.from("orders").select("*").eq("id", id).eq("user_id", user.id).single(),
+    supabase.from("orders").select("*, drivers(id, full_name, phone, vehicle_type, vehicle_plate, rating, avatar_url, latitude, longitude)").eq("id", id).eq("user_id", user.id).single(),
     supabase.from("ratings").select("stars, comment").eq("order_id", id).maybeSingle(),
   ]);
 
@@ -27,9 +27,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const canCancel = ["pending", "accepted"].includes(order.status);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <Navbar user={{ email: user.email! }} />
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
         <Link href="/orders" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 mb-6">
           <ArrowLeft className="h-4 w-4" /> Back to orders
         </Link>
@@ -146,6 +144,56 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           )}
         </div>
 
+        {/* Live tracking map — shown while driver is on the way */}
+        {order.drivers &&
+          ["accepted", "in_progress"].includes(order.status) &&
+          (order.pickup_lat || order.delivery_lat) && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 mb-4">
+              <h2 className="font-bold text-gray-900 dark:text-slate-100 mb-3">Live Tracking</h2>
+              <TrackingMap
+                driverId={order.drivers.id}
+                pickupLat={order.pickup_lat ?? order.delivery_lat ?? 6.5244}
+                pickupLng={order.pickup_lng ?? order.delivery_lng ?? 3.3792}
+                initialDriverLat={order.drivers.latitude ?? null}
+                initialDriverLng={order.drivers.longitude ?? null}
+              />
+            </div>
+          )}
+
+        {/* Driver card — shown once a driver is assigned */}
+        {order.drivers && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 mb-4">
+            <h2 className="font-bold text-gray-900 dark:text-slate-100 mb-4">Your Driver</h2>
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+                {order.drivers.avatar_url
+                  ? <img src={order.drivers.avatar_url} alt={order.drivers.full_name} className="h-full w-full object-cover" />
+                  : (order.drivers.vehicle_type === "bike" ? "🏍️" : order.drivers.vehicle_type === "car" ? "🚗" : "🛺")}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 dark:text-slate-100 text-lg">{order.drivers.full_name}</p>
+                <div className="flex items-center gap-3 mt-1 flex-wrap">
+                  <span className="flex items-center gap-1 text-sm text-yellow-500 font-semibold">
+                    <Star className="h-3.5 w-3.5 fill-yellow-500" />
+                    {Number(order.drivers.rating).toFixed(1)}
+                  </span>
+                  <span className="text-gray-300 dark:text-slate-600">·</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400 capitalize">{order.drivers.vehicle_type}</span>
+                  <span className="text-gray-300 dark:text-slate-600">·</span>
+                  <span className="text-sm font-mono text-gray-500 dark:text-slate-400">{order.drivers.vehicle_plate}</span>
+                </div>
+              </div>
+              <a
+                href={`tel:${order.drivers.phone}`}
+                className="flex-shrink-0 flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition"
+              >
+                <Phone className="h-4 w-4" />
+                Call
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Payment */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 mb-4">
           <h2 className="font-bold text-gray-900 dark:text-slate-100 mb-4">Payment</h2>
@@ -183,6 +231,5 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           />
         )}
       </div>
-    </div>
   );
 }

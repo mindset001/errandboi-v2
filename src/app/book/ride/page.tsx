@@ -6,7 +6,6 @@ import { MapPin, Navigation } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { VehicleType, FareEstimate } from "@/types";
 import { estimateFares, haversineDistance, formatCurrency, generateReference } from "@/lib/utils";
-import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import PlacesAutocomplete from "@/components/ui/PlacesAutocomplete";
 
@@ -178,13 +177,10 @@ function RideBookingForm() {
 
 export default function RidePage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <Navbar />
-      <div className="py-12 px-4 sm:px-6">
-        <Suspense fallback={<div className="text-center py-20 text-gray-400 dark:text-slate-500">Loading...</div>}>
-          <RideBookingForm />
-        </Suspense>
-      </div>
+    <div className="py-12 px-4 sm:px-6">
+      <Suspense fallback={<div className="text-center py-20 text-gray-400 dark:text-slate-500">Loading...</div>}>
+        <RideBookingForm />
+      </Suspense>
     </div>
   );
 }

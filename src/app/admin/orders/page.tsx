@@ -36,7 +36,7 @@ export default async function AdminOrdersPage({
 
   const [{ data: orders }, { data: drivers }] = await Promise.all([
     query,
-    supabase.from("drivers").select("id, full_name, vehicle_type").eq("is_available", true).order("full_name"),
+    supabase.from("drivers").select("id, full_name, vehicle_type, is_available").order("full_name"),
   ]);
 
   const userIds = [...new Set((orders ?? []).map((o) => o.user_id))];
@@ -154,7 +154,7 @@ function DriverAssignForm({
 }: {
   orderId: string;
   currentDriverId: string;
-  drivers: { id: string; full_name: string; vehicle_type: string }[];
+  drivers: { id: string; full_name: string; vehicle_type: string; is_available: boolean }[];
 }) {
   const vehicleIcon: Record<string, string> = { bike: "🏍️", car: "🚗", tricycle: "🛺" };
 
@@ -166,12 +166,12 @@ function DriverAssignForm({
       <select
         name="driver_id"
         defaultValue={currentDriverId}
-        className="rounded-lg bg-slate-700 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 focus:outline-none focus:border-orange-400 max-w-[140px]"
+        className="rounded-lg bg-slate-700 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 focus:outline-none focus:border-orange-400 max-w-[160px]"
       >
         <option value="">— Unassigned —</option>
         {drivers.map((d) => (
           <option key={d.id} value={d.id}>
-            {vehicleIcon[d.vehicle_type] ?? ""} {d.full_name}
+            {vehicleIcon[d.vehicle_type] ?? ""} {d.full_name} {d.is_available ? "" : "(offline)"}
           </option>
         ))}
       </select>

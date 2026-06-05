@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import Navbar from "@/components/layout/Navbar";
 import Badge from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
 
@@ -20,9 +19,7 @@ export default async function DashboardPage() {
   const activeOrder = orders?.find((o) => ["pending", "accepted", "in_progress"].includes(o.status));
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <Navbar user={{ email: user.email! }} />
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12">
 
         {/* Greeting */}
         <div className="mb-8">
@@ -131,6 +128,5 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
-    </div>
   );
 }

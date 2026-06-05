@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import Navbar from "@/components/layout/Navbar";
 import Badge from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
 
@@ -17,9 +16,7 @@ export default async function OrdersPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <Navbar user={{ email: user.email! }} />
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
         <h1 className="text-2xl font-extrabold text-gray-900 dark:text-slate-100 mb-8">My Orders</h1>
 
         {!orders || orders.length === 0 ? (
@@ -84,6 +81,5 @@ export default async function OrdersPage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

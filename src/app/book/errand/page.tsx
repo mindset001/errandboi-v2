@@ -6,7 +6,6 @@ import { MapPin, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ErrandItem } from "@/types";
 import { formatCurrency, generateReference } from "@/lib/utils";
-import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import PlacesAutocomplete from "@/components/ui/PlacesAutocomplete";
@@ -89,20 +88,17 @@ export default function ErrandPage() {
 
   if (step === "success") {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-        <Navbar />
-        <div className="flex flex-col items-center text-center py-20 px-4 gap-6">
-          <div className="text-6xl">🛒</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Errand submitted!</h2>
-          <p className="text-gray-500 dark:text-slate-400 max-w-sm">
-            An Errandboi agent will head to {market} and get your items.
-          </p>
-          <div className="flex gap-3">
-            <Button onClick={() => router.push(`/orders/${orderId}`)}>Track Errand</Button>
-            <Button variant="outline" onClick={() => { setStep("form"); setItems([{ name: "", quantity: 1 }]); }}>
-              New Errand
-            </Button>
-          </div>
+      <div className="flex flex-col items-center text-center py-20 px-4 gap-6">
+        <div className="text-6xl">🛒</div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Errand submitted!</h2>
+        <p className="text-gray-500 dark:text-slate-400 max-w-sm">
+          An Errandboi agent will head to {market} and get your items.
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={() => router.push(`/orders/${orderId}`)}>Track Errand</Button>
+          <Button variant="outline" onClick={() => { setStep("form"); setItems([{ name: "", quantity: 1 }]); }}>
+            New Errand
+          </Button>
         </div>
       </div>
     );
@@ -111,9 +107,7 @@ export default function ErrandPage() {
   const inputBase = "w-full rounded-xl border px-3 py-2.5 text-sm transition focus:outline-none focus:ring-2 bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-orange-400 focus:bg-white focus:ring-orange-100 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-orange-400 dark:focus:bg-slate-800 dark:focus:ring-orange-900/40";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <Navbar />
-      <div className="py-12 px-4 sm:px-6 max-w-2xl mx-auto">
+    <div className="py-12 px-4 sm:px-6 max-w-2xl mx-auto">
         <h1 className="text-2xl font-extrabold text-gray-900 dark:text-slate-100 mb-2">Send Errandboi to Market</h1>
         <p className="text-gray-500 dark:text-slate-400 mb-8">Tell us what you need, we&apos;ll shop and deliver to your door.</p>
 
@@ -242,6 +236,5 @@ export default function ErrandPage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

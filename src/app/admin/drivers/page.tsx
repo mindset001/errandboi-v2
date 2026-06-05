@@ -1,6 +1,7 @@
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
-import { addDriver, toggleDriverAvailability, deleteDriver } from "./actions";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { addDriver, toggleDriverAvailability, deleteDriver, approveDriver, rejectDriver } from "./actions";
+import { linkDriverAccount } from "./link-action";
+import { PlusCircle, Trash2, Link, CheckCircle, XCircle } from "lucide-react";
 
 export default async function AdminDriversPage() {
   const supabase = createClient();
@@ -9,8 +10,13 @@ export default async function AdminDriversPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  const available = drivers?.filter((d) => d.is_available).length ?? 0;
-  const total = drivers?.length ?? 0;
+  const pending = (drivers ?? []).filter((d) => d.status === "pending" && d.vehicle_plate && d.vehicle_plate !== "");
+  const incompleteProfile = (drivers ?? []).filter((d) => !d.vehicle_plate || d.vehicle_plate === "");
+  const approved = (drivers ?? []).filter((d) => d.status === "approved");
+  const rejected = (drivers ?? []).filter((d) => d.status === "rejected");
+
+  const available = approved.filter((d) => d.is_available).length;
+  const total = approved.length;
 
   return (
     <div className="p-6 sm:p-8 max-w-7xl mx-auto">
@@ -18,15 +24,97 @@ export default async function AdminDriversPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-white">Drivers</h1>
           <p className="text-slate-400 mt-1 text-sm">
-            {available} available · {total - available} offline · {total} total
+            {available} available · {total - available} offline · {total} approved
+            {pending.length > 0 && ` · ${pending.length} pending review`}
           </p>
         </div>
       </div>
 
-      {/* Add driver form */}
+      {/* Pending review — drivers who filled in their profile */}
+      {pending.length > 0 && (
+        <div className="mb-8 bg-amber-500/10 border border-amber-500/30 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-amber-500/20">
+            <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wide">
+              Pending Review ({pending.length})
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-amber-500/20">
+                  {["Driver", "Vehicle", "Plate", "License", "NIN", "Actions"].map((h) => (
+                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-amber-400/70 uppercase tracking-wide whitespace-nowrap">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-500/10">
+                {pending.map((driver) => (
+                  <tr key={driver.id} className="hover:bg-amber-500/5 transition">
+                    <td className="px-5 py-4">
+                      <p className="font-semibold text-slate-100">{driver.full_name}</p>
+                      <p className="text-xs text-slate-500">{driver.phone}</p>
+                    </td>
+                    <td className="px-5 py-4 text-slate-300 capitalize">
+                      {driver.vehicle_type === "bike" ? "🏍️ Bike" : driver.vehicle_type === "car" ? "🚗 Car" : "🛺 Keke"}
+                    </td>
+                    <td className="px-5 py-4 text-slate-300 font-mono text-xs">{driver.vehicle_plate}</td>
+                    <td className="px-5 py-4 text-slate-300 font-mono text-xs">{driver.license_number || "—"}</td>
+                    <td className="px-5 py-4 text-slate-400 text-xs">{driver.nin || "—"}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex gap-2">
+                        <form action={approveDriver.bind(null, driver.id)}>
+                          <button
+                            type="submit"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 px-3 py-1.5 text-xs font-semibold transition"
+                          >
+                            <CheckCircle className="h-3.5 w-3.5" /> Approve
+                          </button>
+                        </form>
+                        <form action={rejectDriver.bind(null, driver.id)}>
+                          <button
+                            type="submit"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 text-xs font-semibold transition"
+                          >
+                            <XCircle className="h-3.5 w-3.5" /> Reject
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Drivers who signed up but haven't completed their profile */}
+      {incompleteProfile.length > 0 && (
+        <div className="mb-8 bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-700">
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+              Awaiting Profile Completion ({incompleteProfile.length})
+            </h2>
+          </div>
+          <div className="divide-y divide-slate-700/50">
+            {incompleteProfile.map((driver) => (
+              <div key={driver.id} className="px-5 py-3 flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-slate-300 text-sm">{driver.full_name}</p>
+                  <p className="text-xs text-slate-500">{driver.phone} · Signed up, profile not yet submitted</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add driver manually */}
       <details className="mb-6">
         <summary className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition">
-          <PlusCircle className="h-4 w-4" /> Add New Driver
+          <PlusCircle className="h-4 w-4" /> Add Driver Manually
         </summary>
         <form
           action={addDriver}
@@ -58,13 +146,16 @@ export default async function AdminDriversPage() {
         </form>
       </details>
 
-      {/* Drivers table */}
+      {/* Approved drivers table */}
       <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-700">
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Approved Drivers</h2>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-700">
-                {["Driver", "Vehicle", "Plate", "Rating", "Status", "Toggle", "Remove"].map((h) => (
+                {["Driver", "Vehicle", "Plate", "Rating", "Status", "Account", "Toggle", "Remove"].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">
                     {h}
                   </th>
@@ -72,7 +163,7 @@ export default async function AdminDriversPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
-              {(drivers ?? []).map((driver) => (
+              {approved.map((driver) => (
                 <tr key={driver.id} className="hover:bg-slate-700/30 transition">
                   <td className="px-5 py-4">
                     <p className="font-semibold text-slate-100">{driver.full_name}</p>
@@ -87,6 +178,29 @@ export default async function AdminDriversPage() {
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${driver.is_available ? "bg-green-400/10 text-green-400" : "bg-slate-700 text-slate-400"}`}>
                       {driver.is_available ? "Available" : "Offline"}
                     </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    {driver.auth_user_id ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-400 font-medium">
+                        <Link className="h-3.5 w-3.5" /> Linked
+                      </span>
+                    ) : (
+                      <form action={async (fd: FormData) => {
+                        "use server";
+                        await linkDriverAccount(driver.id, fd.get("email") as string);
+                      }} className="flex gap-1.5 items-center">
+                        <input
+                          name="email"
+                          type="email"
+                          required
+                          placeholder="driver@email.com"
+                          className="rounded-lg bg-slate-700 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 focus:outline-none focus:border-orange-400 w-36 placeholder-slate-500"
+                        />
+                        <button type="submit" className="rounded-lg bg-slate-600 hover:bg-orange-500 px-2 py-1.5 text-xs font-semibold text-white transition whitespace-nowrap">
+                          Link
+                        </button>
+                      </form>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <form action={toggleDriverAvailability.bind(null, driver.id, driver.is_available)}>
@@ -117,11 +231,35 @@ export default async function AdminDriversPage() {
               ))}
             </tbody>
           </table>
-          {!drivers?.length && (
-            <div className="text-center py-16 text-slate-500">No drivers yet. Add one above.</div>
+          {approved.length === 0 && (
+            <div className="text-center py-16 text-slate-500">No approved drivers yet.</div>
           )}
         </div>
       </div>
+
+      {/* Rejected drivers */}
+      {rejected.length > 0 && (
+        <div className="mt-6 bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-700">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Rejected ({rejected.length})</h2>
+          </div>
+          <div className="divide-y divide-slate-700/50">
+            {rejected.map((driver) => (
+              <div key={driver.id} className="px-5 py-3 flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-slate-400 text-sm">{driver.full_name}</p>
+                  <p className="text-xs text-slate-600">{driver.phone}</p>
+                </div>
+                <form action={approveDriver.bind(null, driver.id)}>
+                  <button type="submit" className="text-xs text-green-400 hover:text-green-300 transition">
+                    Re-approve
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
