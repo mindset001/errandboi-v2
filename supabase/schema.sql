@@ -149,6 +149,52 @@ create index orders_created_at_idx on public.orders(created_at desc);
 
 
 -- ─────────────────────────────────────────────
+-- RATINGS
+-- ─────────────────────────────────────────────
+create table public.ratings (
+  id uuid default uuid_generate_v4() primary key,
+  order_id uuid references public.orders(id) on delete cascade not null unique,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  driver_id uuid references public.drivers(id) on delete set null,
+  stars integer not null check (stars between 1 and 5),
+  comment text,
+  created_at timestamptz default now()
+);
+
+alter table public.ratings enable row level security;
+
+create policy "Users can view own ratings"
+  on public.ratings for select using (auth.uid() = user_id);
+
+create policy "Users can insert own ratings"
+  on public.ratings for insert with check (auth.uid() = user_id);
+
+-- Auto-update driver average rating on new rating
+create or replace function public.refresh_driver_rating()
+returns trigger as $$
+begin
+  if new.driver_id is not null then
+    update public.drivers
+    set rating = (
+      select round(avg(stars)::numeric, 2)
+      from public.ratings
+      where driver_id = new.driver_id
+    )
+    where id = new.driver_id;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_rating_inserted
+  after insert on public.ratings
+  for each row execute function public.refresh_driver_rating();
+
+create index ratings_order_id_idx on public.ratings(order_id);
+create index ratings_driver_id_idx on public.ratings(driver_id);
+
+
+-- ─────────────────────────────────────────────
 -- REALTIME (enable for live tracking)
 -- ─────────────────────────────────────────────
 alter publication supabase_realtime add table public.orders;
