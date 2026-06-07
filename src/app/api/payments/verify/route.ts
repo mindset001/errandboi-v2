@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { reference, orderId } = await req.json();
+  const { reference, orderId, paymentType } = await req.json();
   if (!reference || !orderId) {
     return NextResponse.json({ error: "Missing reference or orderId" }, { status: 400 });
   }
@@ -17,9 +17,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Payment verification failed" }, { status: 402 });
   }
 
+  const isItems = paymentType === "items";
+  const updateFields = isItems
+    ? { items_payment_status: "paid", items_payment_reference: reference }
+    : { payment_status: "paid", payment_reference: reference };
+
   const { error } = await supabase
     .from("orders")
-    .update({ payment_status: "paid", payment_reference: reference })
+    .update(updateFields)
     .eq("id", orderId)
     .eq("user_id", user.id);
 

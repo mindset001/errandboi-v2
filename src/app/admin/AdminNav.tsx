@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Users, Truck } from "lucide-react";
+import { LayoutDashboard, Package, Users, Truck, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/orders",    label: "Orders",    icon: Package },
-  { href: "/admin/drivers",   label: "Drivers",   icon: Truck },
-  { href: "/admin/users",     label: "Users",     icon: Users },
+  { href: "/admin/dashboard",   label: "Dashboard",   icon: LayoutDashboard },
+  { href: "/admin/orders",      label: "Orders",      icon: Package },
+  { href: "/admin/drivers",     label: "Drivers",     icon: Truck },
+  { href: "/admin/users",       label: "Users",       icon: Users },
+  { href: "/admin/withdrawals", label: "Withdrawals", icon: Banknote },
 ];
 
 export function AdminSidebarNav() {

@@ -81,6 +81,7 @@ export default function ErrandPage() {
         notes,
         status: "pending",
         payment_reference: generateReference(),
+        items_payment_reference: itemsTotal > 0 ? generateReference() : null,
       })
       .select().single();
     setLoading(false);
@@ -149,26 +150,61 @@ export default function ErrandPage() {
 
             {/* Shopping list */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 flex flex-col gap-4">
-              <h2 className="font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-orange-500" /> Shopping List
-              </h2>
+              <div>
+                <h2 className="font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2 mb-2">
+                  <ShoppingCart className="h-5 w-5 text-orange-500" /> Shopping List
+                </h2>
+                <div className="rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 px-3 py-2.5 text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
+                  <span className="font-semibold">Be specific</span> — include brand, size, colour, or how ripe.<br />
+                  <span className="text-orange-500/80 dark:text-orange-400/70">
+                    e.g. &ldquo;Dangote Sugar 1kg&rdquo; · &ldquo;Tomatoes — 1 paint, very ripe&rdquo; · &ldquo;Indomie Chicken 70g × 5&rdquo;
+                  </span>
+                </div>
+              </div>
+
               {items.map((item, i) => (
                 <div key={i} className="flex flex-col gap-2 pb-4 border-b border-gray-50 dark:border-slate-700/50 last:border-0 last:pb-0">
-                  <div className="flex gap-2">
-                    <input className={`${inputBase} flex-1`} placeholder={`Item ${i + 1} name`} value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)} required />
-                    <input className={`${inputBase} w-20 text-center`} type="number" min={1} placeholder="Qty" value={item.quantity} onChange={(e) => updateItem(i, "quantity", Number(e.target.value))} />
+                  {/* Description row */}
+                  <div className="flex gap-2 items-start">
+                    <textarea
+                      className={`${inputBase} flex-1 resize-none`}
+                      rows={2}
+                      placeholder={
+                        i === 0 ? "e.g. Tomatoes — 1 paint, get the very ripe ones"
+                        : i === 1 ? "e.g. Dangote Sugar — 1 kg pack"
+                        : "Describe what to buy (brand, size, colour…)"
+                      }
+                      value={item.name}
+                      onChange={(e) => updateItem(i, "name", e.target.value)}
+                      required
+                    />
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <label className="text-xs text-gray-400 dark:text-slate-500">Qty</label>
+                      <input
+                        className={`${inputBase} w-16 text-center`}
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) => updateItem(i, "quantity", Number(e.target.value))}
+                      />
+                    </div>
                     {items.length > 1 && (
-                      <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600 dark:hover:text-red-300">
+                      <button type="button" onClick={() => removeItem(i)} className="mt-1 text-red-400 hover:text-red-600 dark:hover:text-red-300 flex-shrink-0">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <input className={`${inputBase} flex-1`} type="number" placeholder="Est. price (₦) optional" value={item.estimated_price || ""} onChange={(e) => updateItem(i, "estimated_price", Number(e.target.value))} />
-                    <input className={`${inputBase} flex-1`} placeholder="Note (optional)" value={item.note || ""} onChange={(e) => updateItem(i, "note", e.target.value)} />
-                  </div>
+                  {/* Estimated price — optional, below */}
+                  <input
+                    className={`${inputBase} w-48`}
+                    type="number"
+                    placeholder="Estimated price (₦) — optional"
+                    value={item.estimated_price || ""}
+                    onChange={(e) => updateItem(i, "estimated_price", Number(e.target.value))}
+                  />
                 </div>
               ))}
+
               <button type="button" onClick={addItem} className="flex items-center gap-2 text-sm text-orange-500 dark:text-orange-400 font-medium hover:text-orange-600 dark:hover:text-orange-300">
                 <Plus className="h-4 w-4" /> Add another item
               </button>

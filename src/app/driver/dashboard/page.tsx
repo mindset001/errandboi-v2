@@ -92,9 +92,9 @@ export default async function DriverDashboardPage() {
   // Pending drivers get a read-only view (can't go online or accept orders)
   const { data: orders } = await supabase
     .from("orders")
-    .select("*")
+    .select("id, order_type, vehicle_type, pickup_address, dropoff_address, market_name, delivery_address, fare, total, budget, items, notes, status, created_at, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, delivery_lat, delivery_lng")
     .eq("driver_id", driver.id)
-    .in("status", ["pending", "accepted", "in_progress"])
+    .in("status", ["accepted", "in_progress"])
     .order("created_at", { ascending: false });
 
   return (

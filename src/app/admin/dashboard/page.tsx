@@ -1,6 +1,7 @@
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { formatCurrency } from "@/lib/utils";
-import { Package, Users, Truck, TrendingUp, Clock, CheckCircle, XCircle } from "lucide-react";
+import { platformFee, driverPayout } from "@/lib/commission";
+import { Package, Users, Truck, TrendingUp, Clock, CheckCircle, XCircle, Banknote, HandCoins } from "lucide-react";
 import RevenueChart from "./RevenueChart";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +73,9 @@ export default async function AdminDashboardPage() {
     : { data: [] };
   const recentProfileMap = new Map((recentProfiles ?? []).map((p) => [p.id, p]));
 
-  const revenue = (completedOrderRows ?? []).reduce((s, o) => s + (o.fare || o.total || 0), 0);
+  const gmv = (completedOrderRows ?? []).reduce((s, o) => s + (o.fare || o.total || 0), 0);
+  const platformRevenue = platformFee(gmv);
+  const driverPayouts = driverPayout(gmv);
   const daily = buildDailyData(completedOrderRows ?? []);
   const weekly = buildWeeklyData(completedOrderRows ?? []);
 
@@ -84,12 +87,12 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {[
-          { label: "Total Revenue", value: formatCurrency(revenue), icon: TrendingUp, color: "text-green-400", bg: "bg-green-400/10" },
           { label: "Total Orders", value: totalOrders ?? 0, icon: Package, color: "text-blue-400", bg: "bg-blue-400/10" },
           { label: "Registered Users", value: totalUsers ?? 0, icon: Users, color: "text-purple-400", bg: "bg-purple-400/10" },
           { label: "Active Drivers", value: `${availableDrivers ?? 0} / ${totalDrivers ?? 0}`, icon: Truck, color: "text-orange-400", bg: "bg-orange-400/10" },
+          { label: "Gross Volume (GMV)", value: formatCurrency(gmv), icon: TrendingUp, color: "text-slate-400", bg: "bg-slate-700" },
         ].map((stat) => (
           <div key={stat.label} className="bg-slate-800 rounded-2xl border border-slate-700 p-5">
             <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${stat.bg} mb-3`}>
@@ -99,6 +102,28 @@ export default async function AdminDashboardPage() {
             <p className="text-xs text-slate-400 mt-1">{stat.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Revenue split */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-5 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+            <Banknote className="h-5 w-5 text-green-400" />
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold text-white">{formatCurrency(platformRevenue)}</p>
+            <p className="text-xs text-green-400 mt-0.5">Platform Revenue <span className="text-slate-500">(15%)</span></p>
+          </div>
+        </div>
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0">
+            <HandCoins className="h-5 w-5 text-slate-400" />
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold text-white">{formatCurrency(driverPayouts)}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Driver Payouts <span className="text-slate-500">(85%)</span></p>
+          </div>
+        </div>
       </div>
 
       {/* Revenue chart */}

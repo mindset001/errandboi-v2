@@ -6,19 +6,20 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_OPTIONS: OrderStatus[] = ["pending", "accepted", "in_progress", "completed", "cancelled"];
+const STATUS_OPTIONS: OrderStatus[] = ["pending", "accepted", "in_progress", "awaiting_confirmation", "completed", "cancelled"];
 
 const statusStyle: Record<string, string> = {
   pending: "bg-yellow-400/10 text-yellow-400",
   accepted: "bg-blue-400/10 text-blue-400",
   in_progress: "bg-indigo-400/10 text-indigo-300",
+  awaiting_confirmation: "bg-teal-400/10 text-teal-300",
   completed: "bg-green-400/10 text-green-400",
   cancelled: "bg-red-400/10 text-red-400",
 };
 
 const statusLabel: Record<string, string> = {
   pending: "Pending", accepted: "Accepted", in_progress: "In Progress",
-  completed: "Completed", cancelled: "Cancelled",
+  awaiting_confirmation: "Awaiting Confirm", completed: "Completed", cancelled: "Cancelled",
 };
 
 export default async function AdminOrdersPage({
@@ -91,6 +92,11 @@ export default async function AdminOrdersPage({
                     <span className="capitalize text-slate-200 font-medium">
                       {order.order_type === "ride" ? order.vehicle_type : "Errand"}
                     </span>
+                    {order.order_type === "errand" && (
+                      <span className="ml-2 text-[10px] font-bold bg-orange-500/20 text-orange-400 rounded-full px-2 py-0.5 uppercase tracking-wide">
+                        Assign
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     <p className="text-slate-200 font-medium">
@@ -100,10 +106,14 @@ export default async function AdminOrdersPage({
                       {profileMap.get(order.user_id)?.phone ?? ""}
                     </p>
                   </td>
-                  <td className="px-5 py-4 text-slate-300 max-w-[160px] truncate">
-                    {order.order_type === "ride"
-                      ? `${order.pickup_address} → ${order.dropoff_address}`
-                      : `${order.market_name} → ${order.delivery_address}`}
+                  <td className="px-5 py-4 text-slate-300 max-w-[240px]">
+                    {order.order_type === "ride" ? (
+                      <span className="truncate block">
+                        {order.pickup_address} → {order.dropoff_address}
+                      </span>
+                    ) : (
+                      <ErrandDetails order={order} />
+                    )}
                   </td>
                   <td className="px-5 py-4 text-white font-semibold whitespace-nowrap">
                     {formatCurrency(order.fare || order.total || 0)}
@@ -182,6 +192,57 @@ function DriverAssignForm({
         Set
       </SubmitButton>
     </form>
+  );
+}
+
+type ErrandItemRow = { name: string; quantity: number; estimated_price?: number; note?: string };
+
+function ErrandDetails({ order }: { order: { market_name: string | null; delivery_address: string | null; items: ErrandItemRow[] | null; budget: number | null; notes: string | null; service_fee: number | null; total: number | null; items_payment_status: string | null } }) {
+  const items = order.items ?? [];
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none text-xs text-orange-400 font-semibold hover:text-orange-300 select-none flex items-center gap-1">
+        <span className="group-open:hidden">▶ View errand details</span>
+        <span className="hidden group-open:inline">▼ Hide details</span>
+      </summary>
+      <div className="mt-2 space-y-2">
+        <div>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide">Market</p>
+          <p className="text-slate-200 text-xs font-medium">{order.market_name ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide">Deliver to</p>
+          <p className="text-slate-200 text-xs">{order.delivery_address ?? "—"}</p>
+        </div>
+        {items.length > 0 && (
+          <div>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Shopping list ({items.length} items)</p>
+            <div className="bg-slate-900/60 rounded-lg px-2.5 py-2 space-y-1">
+              {items.map((item, i) => (
+                <div key={i} className="flex justify-between text-xs gap-3">
+                  <span className="text-slate-300">{item.quantity}× {item.name}{item.note ? <span className="text-slate-500"> ({item.note})</span> : null}</span>
+                  <span className="text-slate-500 flex-shrink-0">
+                    {item.estimated_price ? formatCurrency(item.estimated_price * item.quantity) : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {order.budget ? (
+          <p className="text-xs text-orange-400">Budget: {formatCurrency(order.budget)}</p>
+        ) : null}
+        {order.notes && (
+          <div className="bg-amber-900/20 rounded-lg px-2.5 py-1.5 text-xs text-amber-300">
+            <span className="font-semibold">Note: </span>{order.notes}
+          </div>
+        )}
+        <div className="flex gap-3 text-xs pt-1 border-t border-slate-700">
+          <span className="text-slate-500">Service fee: <span className="text-slate-300">{formatCurrency(order.service_fee ?? 0)}</span></span>
+          <span className="text-slate-500">Items: <span className={order.items_payment_status === "paid" ? "text-green-400" : "text-slate-300"}>{order.items_payment_status === "paid" ? "Paid ✓" : "Unpaid"}</span></span>
+        </div>
+      </div>
+    </details>
   );
 }
 

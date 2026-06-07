@@ -3,10 +3,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import Badge from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowLeft, Phone, Star } from "lucide-react";
+import { ArrowLeft, Phone, Star, CheckCircle } from "lucide-react";
 import RatingForm from "./RatingForm";
 import TrackingMap from "./TrackingMap";
 import { cancelOrder } from "./cancel-action";
+import { PaystackPayButton } from "./PaystackPayButton";
+import { OrderStatusWatcher } from "./OrderStatusWatcher";
+import { ConfirmOrderButton } from "./ConfirmOrderButton";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +27,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!order) notFound();
 
   const isRide = order.order_type === "ride";
-  const statusSteps = ["pending", "accepted", "in_progress", "completed"];
+  const statusSteps = ["pending", "accepted", "in_progress", "awaiting_confirmation", "completed"];
   const currentStep = statusSteps.indexOf(order.status);
   const canCancel = ["pending", "accepted"].includes(order.status);
 
+  const serviceFee = order.service_fee ?? 500;
+  const itemsAmount = Math.max(0, (order.total ?? 0) - serviceFee);
+  // Rides: single fare payment. Errands: service fee upfront, items after delivery.
+  const paymentAmount = isRide ? (order.fare ?? 0) : serviceFee;
+  const amount = paymentAmount;
+
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
+      <OrderStatusWatcher orderId={order.id} initialStatus={order.status} />
         <Link href="/orders" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 mb-6">
           <ArrowLeft className="h-4 w-4" /> Back to orders
         </Link>
@@ -196,9 +206,59 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
+        {/* Confirmation section — shown when driver has marked done */}
+        {order.status === "awaiting_confirmation" && (
+          <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-2xl p-6 mb-4">
+            <h2 className="font-bold text-green-800 dark:text-green-300 mb-1">
+              {isRide ? "🚗 Trip completed by driver" : "📦 Items delivered by agent"}
+            </h2>
+            <p className="text-sm text-green-700 dark:text-green-400 mb-4">
+              {isRide
+                ? "Please confirm you have arrived safely at your destination."
+                : "Please confirm you have received all your items before we release payment to the agent."}
+            </p>
+            {!isRide && order.items_payment_status !== "paid" && itemsAmount > 0 && (
+              <div className="mb-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-green-100 dark:border-slate-700">
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-1">
+                  Pay for items first ({formatCurrency(itemsAmount)})
+                </p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">
+                  Pay the agent for items purchased at the market before confirming delivery.
+                </p>
+                <PaystackPayButton
+                  orderId={order.id}
+                  email={user.email!}
+                  amount={itemsAmount}
+                  reference={order.items_payment_reference}
+                  paymentType="items"
+                />
+              </div>
+            )}
+            <ConfirmOrderButton
+              orderId={order.id}
+              label={isRide ? "Confirm Trip Completed" : "Confirm Delivery Received"}
+              disabled={!isRide && itemsAmount > 0 && order.items_payment_status !== "paid"}
+              disabledReason={!isRide && itemsAmount > 0 && order.items_payment_status !== "paid"
+                ? "Pay for items above before confirming delivery."
+                : undefined}
+            />
+          </div>
+        )}
+
         {/* Payment */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6 mb-4">
-          <h2 className="font-bold text-gray-900 dark:text-slate-100 mb-4">Payment</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-gray-900 dark:text-slate-100">Payment</h2>
+            {order.payment_status === "paid" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-500/15 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400">
+                <CheckCircle className="h-3.5 w-3.5" /> {isRide ? "Paid" : "Service fee paid"}
+              </span>
+            ) : order.status !== "cancelled" ? (
+              <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                Unpaid
+              </span>
+            ) : null}
+          </div>
           <div className="flex flex-col gap-2">
             {isRide ? (
               <div className="flex justify-between font-bold text-gray-900 dark:text-slate-100">
@@ -208,20 +268,37 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             ) : (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-slate-400">Items (est.)</span>
-                  <span className="text-gray-900 dark:text-slate-100">{formatCurrency(order.total - order.service_fee)}</span>
+                  <span className="text-gray-500 dark:text-slate-400">Items (estimated)</span>
+                  <span className="text-gray-900 dark:text-slate-100">{formatCurrency(itemsAmount)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-slate-400">Service fee</span>
-                  <span className="text-gray-900 dark:text-slate-100">{formatCurrency(order.service_fee)}</span>
+                  <span className="text-gray-500 dark:text-slate-400">Service / delivery fee</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-900 dark:text-slate-100">{formatCurrency(serviceFee)}</span>
+                    {order.items_payment_status === "paid" && (
+                      <span className="text-xs text-green-600 dark:text-green-400 font-semibold">Paid ✓</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between font-bold text-gray-900 dark:text-slate-100 pt-2 border-t border-gray-100 dark:border-slate-700">
                   <span>Total</span>
                   <span>{formatCurrency(order.total)}</span>
                 </div>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                  Service fee is paid upfront to confirm your booking. Items are paid after delivery.
+                </p>
               </>
             )}
           </div>
+
+          {order.payment_status !== "paid" && order.status !== "cancelled" && (
+            <PaystackPayButton
+              orderId={order.id}
+              email={user.email!}
+              amount={amount}
+              reference={order.payment_reference}
+            />
+          )}
         </div>
 
         {/* Rating — only for completed orders */}
