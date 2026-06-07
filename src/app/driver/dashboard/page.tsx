@@ -13,17 +13,37 @@ export default async function DriverDashboardPage() {
 
   const { data: driver } = await supabase
     .from("drivers")
-    .select("*")
+    .select("id, full_name, phone, vehicle_type, vehicle_plate, rating, is_available, latitude, longitude, status, license_number, nin, license_url, nin_url, profile_photo_url, home_address")
     .eq("auth_user_id", user.id)
     .single();
 
   if (!driver) {
-    // Driver signed up before auto-create was in place — create their pending record now
     const admin = createAdminClient();
     const meta = user.user_metadata ?? {};
+    const phone = meta.phone || "";
+
+    // Try to claim an existing unlinked row (e.g. admin-added or from before auth_user_id existed)
+    if (phone) {
+      const { data: unlinked } = await admin
+        .from("drivers")
+        .select("id")
+        .eq("phone", phone)
+        .is("auth_user_id", null)
+        .maybeSingle();
+
+      if (unlinked) {
+        await admin
+          .from("drivers")
+          .update({ auth_user_id: user.id, status: "pending" })
+          .eq("id", unlinked.id);
+        redirect("/driver/onboarding");
+      }
+    }
+
+    // No existing row — insert a fresh pending record
     const { error: insertError } = await admin.from("drivers").insert({
       full_name: meta.full_name || "Driver",
-      phone: meta.phone || "",
+      phone,
       vehicle_type: "bike",
       vehicle_plate: "",
       is_available: false,
@@ -34,9 +54,8 @@ export default async function DriverDashboardPage() {
 
     if (insertError) {
       return (
-        <Screen emoji="⚠️" title="Database Setup Incomplete">
-          The driver database migration hasn&apos;t been run yet. Ask the admin to run{" "}
-          <code className="text-orange-400">supabase/driver-auth.sql</code> in the Supabase SQL Editor.
+        <Screen emoji="⚠️" title="Setup Error">
+          Could not create your driver profile. Please contact support.
           <p className="text-slate-600 text-xs mt-2 font-mono break-all">{insertError.message}</p>
         </Screen>
       );
@@ -69,17 +88,8 @@ export default async function DriverDashboardPage() {
     );
   }
 
-  if (driver.status === "pending") {
-    return (
-      <Screen emoji="⏳" title="Under Review">
-        Your profile has been submitted and is being reviewed by the admin.
-        You&apos;ll be able to log in and start accepting orders once approved.
-        <p className="text-slate-500 text-xs mt-2">{user.email}</p>
-      </Screen>
-    );
-  }
-
-  // status === "approved"
+  // Both pending and approved drivers see the dashboard
+  // Pending drivers get a read-only view (can't go online or accept orders)
   const { data: orders } = await supabase
     .from("orders")
     .select("*")
@@ -87,7 +97,13 @@ export default async function DriverDashboardPage() {
     .in("status", ["pending", "accepted", "in_progress"])
     .order("created_at", { ascending: false });
 
-  return <DriverClient driver={driver} initialOrders={orders ?? []} />;
+  return (
+    <DriverClient
+      driver={driver}
+      initialOrders={orders ?? []}
+      pending={driver.status === "pending"}
+    />
+  );
 }
 
 function Screen({ emoji, title, children }: { emoji: string; title: string; children: React.ReactNode }) {

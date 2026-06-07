@@ -52,19 +52,30 @@ export default async function HomePage() {
             What can we do for you?
           </h2>
           <p className="text-center text-gray-500 dark:text-slate-400 mb-12">Choose your service and we&apos;ll handle the rest</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((s) => (
-              <Link key={s.title} href={s.href}>
-                <div className="group rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm hover:shadow-md hover:border-orange-200 dark:hover:border-orange-500/50 transition-all cursor-pointer">
-                  <div className="text-4xl mb-4">{s.icon}</div>
-                  <h3 className="font-bold text-gray-900 dark:text-slate-100 text-lg mb-2">{s.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">{s.description}</p>
-                  <span className="mt-4 inline-flex items-center text-sm font-semibold text-orange-500 dark:text-orange-400 group-hover:gap-2 transition-all">
-                    Book now →
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {services.map((s) =>
+              s.comingSoon ? (
+                <div key={s.title} className="relative rounded-2xl border border-dashed border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 p-6 opacity-75 cursor-not-allowed select-none">
+                  <span className="absolute top-3 right-3 inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-500/15 px-2.5 py-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
+                    Coming soon
                   </span>
+                  <div className="text-4xl mb-4 grayscale">{s.icon}</div>
+                  <h3 className="font-bold text-gray-700 dark:text-slate-300 text-lg mb-2">{s.title}</h3>
+                  <p className="text-sm text-gray-400 dark:text-slate-500">{s.description}</p>
                 </div>
-              </Link>
-            ))}
+              ) : (
+                <Link key={s.title} href={s.href!}>
+                  <div className="group rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm hover:shadow-md hover:border-orange-200 dark:hover:border-orange-500/50 transition-all cursor-pointer">
+                    <div className="text-4xl mb-4">{s.icon}</div>
+                    <h3 className="font-bold text-gray-900 dark:text-slate-100 text-lg mb-2">{s.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{s.description}</p>
+                    <span className="mt-4 inline-flex items-center text-sm font-semibold text-orange-500 dark:text-orange-400 group-hover:gap-2 transition-all">
+                      Book now →
+                    </span>
+                  </div>
+                </Link>
+              )
+            )}
           </div>
         </div>
       </section>
@@ -125,11 +136,12 @@ export default async function HomePage() {
   );
 }
 
-const services = [
+const services: { icon: string; title: string; description: string; href?: string; comingSoon?: boolean }[] = [
   { icon: "🏍️", title: "Bike Ride", description: "Fastest way to beat Lagos traffic. Quick pickups, affordable fares.", href: "/book/ride?type=bike" },
   { icon: "🚗", title: "Car Ride", description: "Comfortable rides for longer distances or when you need more space.", href: "/book/ride?type=car" },
   { icon: "🛺", title: "Tricycle (Keke)", description: "Perfect for short distances in areas where bikes don't go.", href: "/book/ride?type=tricycle" },
   { icon: "🛒", title: "Market Errand", description: "Give us your shopping list and we'll handle it. Fresh from the market to your door.", href: "/book/errand" },
+  { icon: "🍔", title: "Food Order", description: "Order from your favourite restaurants and get it delivered hot to your door.", comingSoon: true },
 ];
 
 const steps = [

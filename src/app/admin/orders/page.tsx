@@ -2,6 +2,7 @@ import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { formatCurrency } from "@/lib/utils";
 import { OrderStatus } from "@/types";
 import { updateOrderStatus, assignDriver } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -177,9 +178,9 @@ function DriverAssignForm({
           </option>
         ))}
       </select>
-      <button type="submit" className="rounded-lg bg-slate-600 hover:bg-orange-500 px-2 py-1.5 text-xs font-semibold text-white transition">
+      <SubmitButton pendingText="…" className="rounded-lg bg-slate-600 hover:bg-orange-500 px-2 py-1.5 text-xs font-semibold text-white">
         Set
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -196,9 +197,9 @@ function StatusUpdateForm({ orderId, current }: { orderId: string; current: stri
           <option key={s} value={s}>{statusLabel[s]}</option>
         ))}
       </select>
-      <button type="submit" className="rounded-lg bg-orange-500 hover:bg-orange-600 px-2 py-1.5 text-xs font-semibold text-white transition">
+      <SubmitButton pendingText="…" className="rounded-lg bg-orange-500 hover:bg-orange-600 px-2 py-1.5 text-xs font-semibold text-white">
         Save
-      </button>
+      </SubmitButton>
     </form>
   );
 }

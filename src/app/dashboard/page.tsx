@@ -54,7 +54,7 @@ export default async function DashboardPage() {
         )}
 
         {/* Quick actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
           {[
             { label: "Bike", icon: "🏍️", href: "/book/ride?type=bike" },
             { label: "Car", icon: "🚗", href: "/book/ride?type=car" },
@@ -68,6 +68,11 @@ export default async function DashboardPage() {
               </div>
             </Link>
           ))}
+          <div className="relative flex flex-col items-center justify-center gap-2 rounded-2xl bg-gray-50 dark:bg-slate-800/50 border border-dashed border-gray-200 dark:border-slate-700 p-5 opacity-60 cursor-not-allowed select-none">
+            <span className="absolute top-2 right-2 text-[10px] font-semibold text-orange-500 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded-full leading-tight">Soon</span>
+            <span className="text-3xl grayscale">🍔</span>
+            <span className="text-sm font-semibold text-gray-400 dark:text-slate-500">Food</span>
+          </div>
         </div>
 
         {/* Stats */}

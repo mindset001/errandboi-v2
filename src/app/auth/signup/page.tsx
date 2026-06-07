@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, User, Phone } from "lucide-react";
+import { Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -11,19 +11,51 @@ export const dynamic = "force-dynamic";
 
 export default function SignupPage() {
   const supabase = createClient();
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "", confirmPassword: "" });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   function update(field: keyof typeof form) {
-    return (e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, [field]: e.target.value }));
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((p) => ({ ...p, [field]: e.target.value }));
+      setFieldErrors((p) => ({ ...p, [field]: "" }));
+    };
   }
 
   async function handleSignup(e: { preventDefault(): void }) {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    setFieldErrors({});
+
+    // Client-side password match check
+    if (form.password !== form.confirmPassword) {
+      setFieldErrors({ confirmPassword: "Passwords do not match." });
+      return;
+    }
+    if (form.password.length < 8) {
+      setFieldErrors({ password: "Password must be at least 8 characters." });
+      return;
+    }
+
+    setLoading(true);
+
+    // Pre-flight duplicate check (email + phone)
+    const checkRes = await fetch("/api/auth/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email, phone: form.phone }),
+    });
+    const dupErrors = await checkRes.json();
+    if (Object.keys(dupErrors).length > 0) {
+      setFieldErrors(dupErrors);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -31,11 +63,22 @@ export default function SignupPage() {
     });
     if (error) { setError(error.message); setLoading(false); return; }
     if (data.user) {
-      await supabase.from("profiles").upsert({ id: data.user.id, full_name: form.full_name, email: form.email, phone: form.phone });
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        full_name: form.full_name,
+        email: form.email,
+        phone: form.phone,
+      });
     }
     setSuccess(true);
     setLoading(false);
   }
+
+  const EyeToggle = ({ show, onToggle }: { show: boolean; onToggle: () => void }) => (
+    <button type="button" onClick={onToggle} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition focus:outline-none">
+      {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  );
 
   if (success) {
     return (
@@ -70,11 +113,63 @@ export default function SignupPage() {
               {error}
             </div>
           )}
-          <Input label="Full name" placeholder="John Doe" value={form.full_name} onChange={update("full_name")} icon={<User className="h-4 w-4" />} required />
-          <Input label="Email address" type="email" placeholder="you@example.com" value={form.email} onChange={update("email")} icon={<Mail className="h-4 w-4" />} required />
-          <Input label="Phone number" type="tel" placeholder="+234 800 000 0000" value={form.phone} onChange={update("phone")} icon={<Phone className="h-4 w-4" />} required />
-          <Input label="Password" type="password" placeholder="Min. 8 characters" value={form.password} onChange={update("password")} icon={<Lock className="h-4 w-4" />} minLength={8} required />
-          <Button type="submit" loading={loading} className="mt-2">Create account</Button>
+
+          <Input
+            label="Full name"
+            placeholder="John Doe"
+            value={form.full_name}
+            onChange={update("full_name")}
+            icon={<User className="h-4 w-4" />}
+            error={fieldErrors.full_name}
+            required
+          />
+          <Input
+            label="Email address"
+            type="email"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={update("email")}
+            icon={<Mail className="h-4 w-4" />}
+            error={fieldErrors.email}
+            required
+          />
+          <Input
+            label="Phone number"
+            type="tel"
+            placeholder="+234 800 000 0000"
+            value={form.phone}
+            onChange={update("phone")}
+            icon={<Phone className="h-4 w-4" />}
+            error={fieldErrors.phone}
+            required
+          />
+          <Input
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Min. 8 characters"
+            value={form.password}
+            onChange={update("password")}
+            icon={<Lock className="h-4 w-4" />}
+            trailing={<EyeToggle show={showPassword} onToggle={() => setShowPassword((v) => !v)} />}
+            error={fieldErrors.password}
+            minLength={8}
+            required
+          />
+          <Input
+            label="Confirm password"
+            type={showConfirm ? "text" : "password"}
+            placeholder="Re-enter your password"
+            value={form.confirmPassword}
+            onChange={update("confirmPassword")}
+            icon={<Lock className="h-4 w-4" />}
+            trailing={<EyeToggle show={showConfirm} onToggle={() => setShowConfirm((v) => !v)} />}
+            error={fieldErrors.confirmPassword}
+            required
+          />
+
+          <Button type="submit" loading={loading} className="mt-2">
+            {loading ? "Creating account…" : "Create account"}
+          </Button>
           <p className="text-center text-sm text-gray-500 dark:text-slate-400">
             Already have an account?{" "}
             <Link href="/auth/login" className="font-semibold text-orange-500 hover:underline">Sign in</Link>

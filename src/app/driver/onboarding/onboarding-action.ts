@@ -14,6 +14,7 @@ export async function submitDriverProfile(formData: FormData) {
   const vehiclePlate = (formData.get("vehicle_plate") as string).trim().toUpperCase();
   const licenseNumber = (formData.get("license_number") as string).trim().toUpperCase();
   const nin = (formData.get("nin") as string | null)?.trim() ?? "";
+  const homeAddress = (formData.get("home_address") as string | null)?.trim() ?? "";
 
   const { error } = await supabase
     .from("drivers")
@@ -22,6 +23,7 @@ export async function submitDriverProfile(formData: FormData) {
       vehicle_plate: vehiclePlate,
       license_number: licenseNumber,
       nin: nin || null,
+      home_address: homeAddress || null,
     })
     .eq("auth_user_id", user.id);
 

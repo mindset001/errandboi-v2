@@ -2,6 +2,7 @@ import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { addDriver, toggleDriverAvailability, deleteDriver, approveDriver, rejectDriver } from "./actions";
 import { linkDriverAccount } from "./link-action";
 import { PlusCircle, Trash2, Link, CheckCircle, XCircle } from "lucide-react";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function AdminDriversPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-amber-500/20">
-                  {["Driver", "Vehicle", "Plate", "License", "NIN", "Actions"].map((h) => (
+                  {["Driver", "Vehicle", "Plate", "License No.", "NIN", "Documents", "Actions"].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-amber-400/70 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
@@ -65,22 +66,50 @@ export default async function AdminDriversPage() {
                     <td className="px-5 py-4 text-slate-300 font-mono text-xs">{driver.license_number || "—"}</td>
                     <td className="px-5 py-4 text-slate-400 text-xs">{driver.nin || "—"}</td>
                     <td className="px-5 py-4">
+                      <div className="flex flex-col gap-1.5">
+                        {driver.license_url ? (
+                          <a
+                            href={driver.license_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 transition"
+                          >
+                            📄 License
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-600">No license doc</span>
+                        )}
+                        {driver.nin_url ? (
+                          <a
+                            href={driver.nin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 transition"
+                          >
+                            🪪 NIN / ID
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-600">No NIN doc</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
                       <div className="flex gap-2">
                         <form action={approveDriver.bind(null, driver.id)}>
-                          <button
-                            type="submit"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 px-3 py-1.5 text-xs font-semibold transition"
+                          <SubmitButton
+                            pendingText="Approving…"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 px-3 py-1.5 text-xs font-semibold"
                           >
                             <CheckCircle className="h-3.5 w-3.5" /> Approve
-                          </button>
+                          </SubmitButton>
                         </form>
                         <form action={rejectDriver.bind(null, driver.id)}>
-                          <button
-                            type="submit"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 text-xs font-semibold transition"
+                          <SubmitButton
+                            pendingText="Rejecting…"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 text-xs font-semibold"
                           >
                             <XCircle className="h-3.5 w-3.5" /> Reject
-                          </button>
+                          </SubmitButton>
                         </form>
                       </div>
                     </td>
@@ -138,12 +167,12 @@ export default async function AdminDriversPage() {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <button
-              type="submit"
-              className="rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition"
+            <SubmitButton
+              pendingText="Adding…"
+              className="rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
             >
               Add Driver
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </details>
@@ -198,35 +227,33 @@ export default async function AdminDriversPage() {
                           placeholder="driver@email.com"
                           className="rounded-lg bg-slate-700 border border-slate-600 text-slate-200 text-xs px-2 py-1.5 focus:outline-none focus:border-orange-400 w-36 placeholder-slate-500"
                         />
-                        <button type="submit" className="rounded-lg bg-slate-600 hover:bg-orange-500 px-2 py-1.5 text-xs font-semibold text-white transition whitespace-nowrap">
+                        <SubmitButton pendingText="Linking…" className="rounded-lg bg-slate-600 hover:bg-orange-500 px-2 py-1.5 text-xs font-semibold text-white whitespace-nowrap">
                           Link
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>
                   <td className="px-5 py-4">
                     <form action={toggleDriverAvailability.bind(null, driver.id, driver.is_available)}>
-                      <button
-                        type="submit"
-                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                      <SubmitButton
+                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
                           driver.is_available
                             ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
                             : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
                         }`}
                       >
                         {driver.is_available ? "Set Offline" : "Set Available"}
-                      </button>
+                      </SubmitButton>
                     </form>
                   </td>
                   <td className="px-5 py-4">
                     <form action={deleteDriver.bind(null, driver.id)}>
-                      <button
-                        type="submit"
-                        className="rounded-lg p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition"
+                      <SubmitButton
+                        className="rounded-lg p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10"
                         title="Remove driver"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </SubmitButton>
                     </form>
                   </td>
                 </tr>
@@ -253,9 +280,9 @@ export default async function AdminDriversPage() {
                   <p className="text-xs text-slate-600">{driver.phone}</p>
                 </div>
                 <form action={approveDriver.bind(null, driver.id)}>
-                  <button type="submit" className="text-xs text-green-400 hover:text-green-300 transition">
+                  <SubmitButton pendingText="Approving…" className="text-xs text-green-400 hover:text-green-300">
                     Re-approve
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             ))}

@@ -1,5 +1,6 @@
 import { adminLogin } from "./actions";
 import { Lock } from "lucide-react";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export default function AdminLoginPage({
   searchParams,
@@ -34,12 +35,12 @@ export default function AdminLoginPage({
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600 transition"
+          <SubmitButton
+            pendingText="Verifying…"
+            className="w-full rounded-xl bg-orange-500 py-3 font-semibold text-white hover:bg-orange-600"
           >
             Enter Admin Panel
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>

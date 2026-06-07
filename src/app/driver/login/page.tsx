@@ -18,7 +18,6 @@ export default function DriverLoginPage() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [signedUp, setSignedUp] = useState(false);
 
   async function handleLogin(e: { preventDefault(): void }) {
     e.preventDefault();
@@ -35,47 +34,31 @@ export default function DriverLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName, phone, role: "driver" },
-      },
-    });
-    if (error) { setLoading(false); setError(error.message); return; }
 
-    // Auto-create pending driver record so admin and driver can both see it
-    if (data.user) {
-      await fetch("/api/driver/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: data.user.id, fullName, phone }),
-      });
+    // Create user via server-side admin API — no email verification required
+    const res = await fetch("/api/driver/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, fullName, phone }),
+    });
+    const json = await res.json();
+
+    if (!res.ok || json.error) {
+      setLoading(false);
+      setError(json.error || "Something went wrong. Please try again.");
+      return;
     }
 
-    setLoading(false);
-    setSignedUp(true);
-  }
+    // User is confirmed — sign in immediately
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setLoading(false);
+      setError(signInError.message);
+      return;
+    }
 
-  if (signedUp) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center">
-          <div className="text-5xl mb-4">📬</div>
-          <h2 className="text-xl font-bold text-white mb-2">Check your email</h2>
-          <p className="text-slate-400 text-sm mb-4">
-            We sent a confirmation link to <span className="text-white font-medium">{email}</span>.
-            Click it to activate your account, then log in to complete your driver profile.
-          </p>
-          <button
-            onClick={() => { setSignedUp(false); setTab("login"); }}
-            className="mt-6 text-sm text-orange-400 hover:text-orange-300 transition"
-          >
-            Back to login
-          </button>
-        </div>
-      </div>
-    );
+    router.push("/driver/dashboard");
+    router.refresh();
   }
 
   return (
@@ -131,8 +114,14 @@ export default function DriverLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 px-4 py-3 font-semibold text-white transition mt-1"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 px-4 py-3 font-semibold text-white transition mt-1"
           >
+            {loading && (
+              <svg className="animate-spin h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
             {loading
               ? tab === "login" ? "Signing in…" : "Creating account…"
               : tab === "login" ? "Sign In" : "Create Account"}
@@ -141,7 +130,7 @@ export default function DriverLoginPage() {
 
         {tab === "signup" && (
           <p className="text-center text-xs text-slate-500 mt-4 leading-relaxed">
-            After creating your account, confirm your email then log in to complete your driver profile and KYC.
+            After creating your account you&apos;ll be taken directly to complete your driver profile.
           </p>
         )}
       </div>
