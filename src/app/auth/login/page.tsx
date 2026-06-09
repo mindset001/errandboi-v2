@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock } from "lucide-react";
@@ -18,13 +18,35 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // If already signed in, redirect to the right dashboard
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const { data: driver } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("auth_user_id", data.user.id)
+        .maybeSingle();
+      router.replace(driver ? "/driver/dashboard" : "/dashboard");
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleLogin(e: { preventDefault(): void }) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { setError(error.message); setLoading(false); return; }
-    router.push("/dashboard");
+
+    // Check if this user is a registered driver
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("id")
+      .eq("auth_user_id", data.user.id)
+      .maybeSingle();
+
+    router.push(driver ? "/driver/dashboard" : "/dashboard");
     router.refresh();
   }
 

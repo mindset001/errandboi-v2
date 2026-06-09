@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Errandboi — Fast Logistics",
     short_name: "Errandboi",
     description: "Book rides, send packages, and shop at the market — all in one app.",
-    start_url: "/",
+    start_url: "/auth/login",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
