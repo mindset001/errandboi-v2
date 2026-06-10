@@ -7,6 +7,7 @@ import { Menu, X, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import PushSubscriber from "@/components/PushSubscriber";
 
 interface NavbarProps {
   user?: { email: string; full_name?: string } | null;
@@ -46,6 +47,7 @@ export default function Navbar({ user }: NavbarProps) {
               <Link href="/dashboard" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-orange-500 dark:hover:text-orange-400 transition">
                 Dashboard
               </Link>
+              <PushSubscriber />
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition"

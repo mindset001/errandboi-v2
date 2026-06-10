@@ -1,4 +1,4 @@
-const CACHE = "errandboi-v1";
+const CACHE = "errandboi-v2";
 
 // App shell — pages cached on install so the app loads offline
 const PRECACHE = [
@@ -85,6 +85,38 @@ self.addEventListener("fetch", (event) => {
         return res;
       });
       return cached || network;
+    })
+  );
+});
+
+// ── Push: show notification ───────────────────────────────────────────────────
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let data = {};
+  try { data = event.data.json(); } catch { data = { title: "Errandboi", body: event.data.text() }; }
+
+  const { title = "Errandboi", body = "", url = "/", icon = "/icon" } = data;
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      badge: "/icon",
+      data: { url },
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+// ── Notification click: open the relevant page ────────────────────────────────
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url ?? "/";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes(self.location.origin));
+      if (existing) return existing.focus().then((c) => c.navigate(url));
+      return clients.openWindow(url);
     })
   );
 });

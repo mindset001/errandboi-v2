@@ -10,6 +10,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { driverPayout } from "@/lib/commission";
 import IncomingOrders, { type IncomingOrder } from "./IncomingOrders";
+import PushSubscriber from "@/components/PushSubscriber";
 
 const DriverMap = dynamic(() => import("./DriverMap"), { ssr: false });
 
@@ -127,7 +128,19 @@ export default function DriverClient({
   async function advanceStatus(orderId: string, nextStatus: string) {
     setActionLoading(orderId);
     await supabase.from("orders").update({ status: nextStatus }).eq("id", orderId);
-    // Remove from active list once driver's job is done
+
+    // Notify customer when driver marks complete
+    if (nextStatus === "awaiting_confirmation") {
+      const order = orders.find((o) => o.id === orderId);
+      if (order) {
+        fetch("/api/push/notify-customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId, orderType: order.order_type }),
+        });
+      }
+    }
+
     if (nextStatus === "completed" || nextStatus === "awaiting_confirmation") {
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
     } else {
@@ -233,6 +246,7 @@ export default function DriverClient({
                 {driver.is_available ? "Online" : "Offline"}
               </button>
             )}
+            <PushSubscriber />
             <button onClick={handleSignOut} className="p-1.5 text-slate-500 hover:text-slate-300 transition">
               <LogOut className="h-4 w-4" />
             </button>

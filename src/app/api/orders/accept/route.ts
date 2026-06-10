@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendPushToUser } from "@/lib/push";
 
 export async function POST(req: NextRequest) {
   // Verify driver identity via their session
@@ -36,6 +37,24 @@ export async function POST(req: NextRequest) {
 
   if (!updated) {
     return NextResponse.json({ error: "Order already taken by another driver." }, { status: 409 });
+  }
+
+  // Notify the customer
+  const { data: order } = await admin
+    .from("orders")
+    .select("user_id, order_type, vehicle_type")
+    .eq("id", orderId)
+    .single();
+
+  if (order) {
+    const isRide = order.order_type === "ride";
+    sendPushToUser(order.user_id, {
+      title: isRide ? "🏍️ Driver on the way!" : "🛒 Agent assigned!",
+      body: isRide
+        ? `Your ${order.vehicle_type} is on the way. Track your ride.`
+        : "An Errandboi agent has been assigned to your errand.",
+      url: `/orders/${orderId}`,
+    });
   }
 
   return NextResponse.json({ ok: true });
