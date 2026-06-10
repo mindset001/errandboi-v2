@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Button from "@/components/ui/Button";
 import { HeroScene, EarningsScene } from "./Scenes";
+import PwaRedirect from "./PwaRedirect";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
+      <PwaRedirect />
       <Navbar user={user ? { email: user.email! } : null} />
 
       {/* Hero */}
