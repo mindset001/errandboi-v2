@@ -138,7 +138,7 @@ export default function TrackingMap({
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       />
-      <div ref={mapEl} className="w-full rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700" style={{ height: 280 }} />
+      <div ref={mapEl} className="w-full rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700" style={{ height: "clamp(240px, 42vh, 460px)" }} />
       <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-slate-400">
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full bg-orange-500 inline-block" />

@@ -110,7 +110,7 @@ export default function DriverMap({ driverLat, driverLng, pickupLat, pickupLng, 
   return (
     <div className="flex flex-col gap-2 mt-3">
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <div ref={mapEl} className="w-full rounded-xl overflow-hidden border border-slate-700" style={{ height: 220 }} />
+      <div ref={mapEl} className="w-full rounded-xl overflow-hidden border border-slate-700" style={{ height: "clamp(220px, 38vh, 420px)" }} />
       <div className="flex items-center gap-4 text-xs text-slate-500">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-green-500 inline-block" />

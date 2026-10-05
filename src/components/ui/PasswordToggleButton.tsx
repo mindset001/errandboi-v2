@@ -17,7 +17,7 @@ export default function PasswordToggleButton({
       onClick={onToggle}
       aria-label={shown ? "Hide password" : "Show password"}
       aria-pressed={shown}
-      className={`transition focus:outline-none focus-visible:text-orange-500 ${className}`}
+      className={`-m-2 p-2 rounded-lg transition focus:outline-none focus-visible:text-orange-500 ${className}`}
     >
       {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
     </button>

@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex bg-slate-950 text-slate-100">
+    <div className="min-h-dvh flex bg-slate-950 text-slate-100">
       {/* Sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r border-slate-800 bg-slate-900 fixed inset-y-0">
         <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-800">
@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between bg-slate-900 border-b border-slate-800 px-4 py-3">
+      <div className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between bg-slate-900 border-b border-slate-800 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <div className="flex items-center gap-2">
           <span className="text-xl">🛵</span>
           <span className="font-extrabold text-orange-500 text-sm">Admin</span>
@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Main */}
-      <main className="flex-1 md:ml-60 pt-16 md:pt-0 overflow-auto">
+      <main className="flex-1 md:ml-60 pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0 overflow-auto">
         {children}
       </main>
     </div>

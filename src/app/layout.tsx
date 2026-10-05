@@ -13,8 +13,9 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom stays enabled (accessibility); `cover` lets the layout use the
+  // full screen on notched phones, with safe-area padding applied where needed.
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {

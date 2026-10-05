@@ -170,14 +170,14 @@ export default function DriverClient({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row">
+    <div className="min-h-dvh bg-slate-950 flex flex-col md:flex-row">
       {actionError && (
-        <div role="alert" className="fixed top-4 inset-x-4 z-50 mx-auto max-w-sm rounded-xl bg-red-900/90 border border-red-700 px-4 py-3 text-sm text-red-200 shadow-lg">
+        <div role="alert" className="fixed top-[calc(1rem+env(safe-area-inset-top))] inset-x-4 z-50 mx-auto max-w-sm rounded-xl bg-red-900/90 border border-red-700 px-4 py-3 text-sm text-red-200 shadow-lg">
           {actionError}
         </div>
       )}
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-60 bg-slate-900 border-r border-slate-800 min-h-screen sticky top-0">
+      <aside className="hidden md:flex flex-col w-60 bg-slate-900 border-r border-slate-800 min-h-dvh sticky top-0">
         {/* Logo */}
         <div className="px-5 py-5 border-b border-slate-800">
           <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ export default function DriverClient({
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-dvh">
         {/* Mobile top bar */}
         <div className="md:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -295,7 +295,7 @@ export default function DriverClient({
         </div>
 
         {/* Mobile bottom nav */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex pb-safe">
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -544,11 +544,11 @@ function EarningsTab({ driverId }: { driverId: string }) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6 flex flex-col gap-5">
       {/* Period summary */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[{ label: "Today", value: todayTotal }, { label: "This Week", value: weekTotal }, { label: "All Time", value: totalEarned }].map((s) => (
-          <div key={s.label} className="bg-slate-900 rounded-2xl border border-slate-800 p-4 text-center">
+          <div key={s.label} className="bg-slate-900 rounded-2xl border border-slate-800 p-3 sm:p-4 text-center min-w-0">
             <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-            <p className="text-lg font-extrabold text-orange-400">{formatCurrency(s.value)}</p>
+            <p className="text-sm min-[400px]:text-base sm:text-lg font-extrabold text-orange-400 break-words">{formatCurrency(s.value)}</p>
           </div>
         ))}
       </div>

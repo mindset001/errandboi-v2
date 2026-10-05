@@ -18,7 +18,7 @@ export default async function UserAppLayout({ children }: { children: React.Reac
   const displayName = profile?.full_name || user.email?.split("@")[0] || "User";
 
   return (
-    <div className="min-h-screen flex bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-dvh flex bg-gray-50 dark:bg-slate-900">
 
       {/* ── Desktop sidebar ── */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 z-30">
@@ -47,7 +47,7 @@ export default async function UserAppLayout({ children }: { children: React.Reac
       </aside>
 
       {/* ── Mobile top bar ── */}
-      <div className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3">
+      <div className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-xl">🛵</span>
           <span className="font-extrabold text-orange-500 text-sm">
@@ -58,12 +58,12 @@ export default async function UserAppLayout({ children }: { children: React.Reac
       </div>
 
       {/* ── Main content ── */}
-      <main className="flex-1 md:ml-60 pt-14 md:pt-0 pb-20 md:pb-0 min-h-screen">
+      <main className="flex-1 md:ml-60 pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 min-h-dvh">
         {children}
       </main>
 
       {/* ── Mobile bottom tab bar ── */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 pb-safe">
         <UserMobileNav />
       </nav>
     </div>

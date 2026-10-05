@@ -40,8 +40,8 @@ export function OrderStatusWatcher({ orderId, initialStatus }: { orderId: string
   if (!toast) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300">
-      <div className="flex items-center gap-3 rounded-2xl bg-gray-900 dark:bg-slate-700 shadow-xl px-5 py-3.5 text-white max-w-sm">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-sm z-50 animate-in slide-in-from-bottom-4 duration-300">
+      <div className="flex items-center gap-3 rounded-2xl bg-gray-900 dark:bg-slate-700 shadow-xl px-5 py-3.5 text-white">
         <span className="text-2xl">{toast.emoji}</span>
         <p className="text-sm font-medium">{toast.text}</p>
       </div>

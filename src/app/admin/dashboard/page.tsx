@@ -105,7 +105,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Revenue split */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-5 flex items-center gap-4">
           <div className="h-10 w-10 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
             <Banknote className="h-5 w-5 text-green-400" />

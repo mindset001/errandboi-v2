@@ -13,7 +13,7 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900">
+    <div className="min-h-dvh flex flex-col bg-white dark:bg-slate-900">
       <PwaRedirect />
       <Navbar user={user ? { email: user.email! } : null} />
 

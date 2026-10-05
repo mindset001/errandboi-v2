@@ -8,7 +8,7 @@ export default function AdminLoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+    <div className="min-h-dvh flex items-center justify-center bg-slate-950 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-2xl mb-4">

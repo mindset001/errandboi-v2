@@ -52,7 +52,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white dark:from-slate-900 dark:to-slate-800 px-4">
+    <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-orange-50 to-white dark:from-slate-900 dark:to-slate-800 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">

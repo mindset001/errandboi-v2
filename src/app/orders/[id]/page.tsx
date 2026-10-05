@@ -129,7 +129,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-slate-400">Deliver to</span>
-                <span className="font-medium text-gray-900 dark:text-slate-100 text-right max-w-[200px]">{order.delivery_address}</span>
+                <span className="font-medium text-gray-900 dark:text-slate-100 text-right max-w-[60%] break-words">{order.delivery_address}</span>
               </div>
               {order.items?.length > 0 && (
                 <div className="border-t border-gray-50 dark:border-slate-700 pt-3">

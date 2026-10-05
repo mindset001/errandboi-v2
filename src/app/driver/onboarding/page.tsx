@@ -20,7 +20,7 @@ export default async function DriverOnboardingPage() {
   if (driver.status === "approved") redirect("/driver/dashboard");
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
+    <div className="min-h-dvh bg-slate-950 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-2xl mb-4">

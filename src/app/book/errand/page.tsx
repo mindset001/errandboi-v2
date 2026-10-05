@@ -240,7 +240,7 @@ export default function ErrandPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-slate-400">Deliver to</span>
-                  <span className="font-medium text-gray-900 dark:text-slate-100 text-right max-w-[200px]">{delivery.address}</span>
+                  <span className="font-medium text-gray-900 dark:text-slate-100 text-right max-w-[60%] break-words">{delivery.address}</span>
                 </div>
                 <div className="border-t border-gray-50 dark:border-slate-700 pt-3">
                   <p className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Items ({items.length})</p>

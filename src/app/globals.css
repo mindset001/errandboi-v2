@@ -41,3 +41,27 @@ body {
     scroll-behavior: smooth;
   }
 }
+
+/* ── Responsive foundations ─────────────────────────────── */
+
+/* Notches / home indicator (iOS standalone PWA, notched Android) */
+@utility pt-safe { padding-top: env(safe-area-inset-top); }
+@utility pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Never let a stray wide element create sideways page scroll on phones */
+body { overflow-x: clip; }
+
+/* iOS Safari zooms the page when a focused field is under 16px. Keep fields at
+   16px on touch-size screens so zoom stays available but never triggers by itself. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
