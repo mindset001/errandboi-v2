@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimateFares, haversineDistance } from "@/lib/utils";
+import { estimateFares, haversineDistance, timeAgo } from "@/lib/utils";
 
 const fare = (km: number, type: string) =>
   estimateFares(km).find((f) => f.vehicle_type === type)!.estimated_fare;
@@ -35,5 +35,25 @@ describe("haversineDistance", () => {
     const km = haversineDistance(6.4541, 3.3947, 6.6018, 3.3515);
     expect(km).toBeGreaterThan(14);
     expect(km).toBeLessThan(19);
+  });
+});
+
+describe("timeAgo", () => {
+  const now = new Date("2026-10-05T12:00:00Z").getTime();
+  const ago = (ms: number) => new Date(now - ms).toISOString();
+
+  it("describes recent times relatively", () => {
+    expect(timeAgo(ago(10_000), now)).toBe("just now");
+    expect(timeAgo(ago(5 * 60_000), now)).toBe("5m ago");
+    expect(timeAgo(ago(3 * 3_600_000), now)).toBe("3h ago");
+    expect(timeAgo(ago(2 * 86_400_000), now)).toBe("2d ago");
+  });
+
+  it("falls back to a short date after a week", () => {
+    expect(timeAgo(ago(30 * 86_400_000), now)).toMatch(/Sep/);
+  });
+
+  it("never returns a negative time for a clock-skewed future date", () => {
+    expect(timeAgo(new Date(now + 60_000).toISOString(), now)).toBe("just now");
   });
 });

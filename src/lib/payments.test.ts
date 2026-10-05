@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeAdmin } from "@/test/fake-supabase";
 
+vi.mock("@/lib/notify", () => ({ notifyUser: vi.fn(async () => {}) }));
 vi.mock("@/lib/paystack", () => ({ refundPaystackTransaction: vi.fn(async () => ({ ok: true })) }));
 
 import { refundPaystackTransaction } from "@/lib/paystack";
+import { notifyUser } from "@/lib/notify";
 import { applyPayment, expectedNaira } from "@/lib/payments";
 
 const ride = () => ({
@@ -33,6 +35,18 @@ describe("applyPayment", () => {
     const r = await applyPayment(fakeAdmin(rows), rows[0], "order", "REF-RIDE-1", tx(195_000));
     expect(r).toEqual({ ok: true });
     expect(rows[0].payment_status).toBe("paid");
+  });
+
+  it("tells the customer their payment was received", async () => {
+    const rows = [{ ...ride(), user_id: "u1" }];
+    await applyPayment(fakeAdmin(rows), rows[0], "order", "REF-RIDE-1", tx(195_000));
+    expect(notifyUser).toHaveBeenCalledWith("u1", expect.objectContaining({ type: "payment", url: "/orders/o1" }));
+  });
+
+  it("does not notify when the payment is rejected", async () => {
+    const rows = [{ ...ride(), user_id: "u1" }];
+    await applyPayment(fakeAdmin(rows), rows[0], "order", "REF-RIDE-1", tx(10_000));
+    expect(notifyUser).not.toHaveBeenCalled();
   });
 
   it("rejects an underpayment — the ₦100-for-a-₦1,950-ride attack", async () => {

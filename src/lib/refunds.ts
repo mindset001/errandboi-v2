@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { refundPaystackTransaction } from "@/lib/paystack";
+import { notifyUser } from "@/lib/notify";
 
 export interface RefundResult {
   ok: boolean;
@@ -19,7 +20,7 @@ export async function refundOrder(
 ): Promise<RefundResult> {
   const { data: order } = await admin
     .from("orders")
-    .select("payment_status, items_payment_status, payment_reference, items_payment_reference, refund_status")
+    .select("user_id, payment_status, items_payment_status, payment_reference, items_payment_reference, refund_status")
     .eq("id", orderId)
     .maybeSingle();
   if (!order) return { ok: false, refunded: 0, error: "Order not found" };
@@ -59,6 +60,14 @@ export async function refundOrder(
       .from("orders")
       .update({ refund_status: "processed", refund_error: null, refunded_at: new Date().toISOString() })
       .eq("id", orderId);
+    if (order.user_id && refunded > 0) {
+      await notifyUser(order.user_id, {
+        type: "refund",
+        title: "💸 Refund issued",
+        body: "Your payment has been refunded. It may take a few days to reach your bank.",
+        url: `/orders/${orderId}`,
+      });
+    }
     return { ok: true, refunded };
   }
 

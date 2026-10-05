@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeAdmin } from "@/test/fake-supabase";
 
+vi.mock("@/lib/notify", () => ({ notifyUser: vi.fn(async () => {}) }));
 vi.mock("@/lib/paystack", () => ({ refundPaystackTransaction: vi.fn() }));
 
 import { refundPaystackTransaction } from "@/lib/paystack";
+import { notifyUser } from "@/lib/notify";
 import { refundOrder } from "@/lib/refunds";
 
 const refund = vi.mocked(refundPaystackTransaction);
@@ -12,7 +14,7 @@ const paid = (over = {}) => ({
   payment_reference: "REF-FEE", items_payment_reference: null, refund_status: null, ...over,
 });
 
-beforeEach(() => { refund.mockReset(); refund.mockResolvedValue({ ok: true }); });
+beforeEach(() => { vi.mocked(notifyUser).mockClear(); refund.mockReset(); refund.mockResolvedValue({ ok: true }); });
 
 describe("refundOrder", () => {
   it("does nothing when nothing was paid", async () => {
@@ -26,6 +28,16 @@ describe("refundOrder", () => {
     expect(await refundOrder(fakeAdmin(rows), "o1")).toEqual({ ok: true, refunded: 1 });
     expect(refund).toHaveBeenCalledWith("REF-FEE");
     expect(rows[0]).toMatchObject({ payment_status: "refunded", refund_status: "processed" });
+  });
+
+  it("notifies the customer once a refund goes through, but not when it fails", async () => {
+    const rows = [paid({ user_id: "u1" })];
+    refund.mockResolvedValueOnce({ ok: false, error: "nope" });
+    await refundOrder(fakeAdmin(rows), "o1");
+    expect(notifyUser).not.toHaveBeenCalled();
+    await refundOrder(fakeAdmin(rows), "o1");
+    expect(notifyUser).toHaveBeenCalledTimes(1);
+    expect(notifyUser).toHaveBeenCalledWith("u1", expect.objectContaining({ type: "refund" }));
   });
 
   it("refunds both legs of an errand", async () => {

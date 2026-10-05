@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refundOrder } from "@/lib/refunds";
+import { notifyUser } from "@/lib/notify";
 
 export async function cancelOrder(orderId: string) {
   const supabase = await createClient();
@@ -20,11 +21,24 @@ export async function cancelOrder(orderId: string) {
     .eq("id", orderId)
     .eq("user_id", user.id)
     .in("status", ["pending", "accepted"])
-    .select("id")
+    .select("id, driver_id")
     .maybeSingle();
 
   if (error) return { error: "Could not cancel order" };
   if (!cancelled) return { error: "Order cannot be cancelled" };
+
+  // If a driver had already accepted it, let them know it's off
+  if (cancelled.driver_id) {
+    const { data: driver } = await admin.from("drivers").select("auth_user_id").eq("id", cancelled.driver_id).maybeSingle();
+    if (driver?.auth_user_id) {
+      await notifyUser(driver.auth_user_id, {
+        type: "order",
+        title: "Order cancelled",
+        body: "The customer cancelled an order you had accepted.",
+        url: "/driver/dashboard",
+      });
+    }
+  }
 
   // Anything the customer already paid goes back to them.
   const refund = await refundOrder(admin, orderId);

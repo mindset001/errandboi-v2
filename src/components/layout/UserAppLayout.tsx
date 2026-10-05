@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { UserDesktopNav, UserMobileNav, UserSignOutButton } from "./UserSidebarNav";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default async function UserAppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -14,6 +15,12 @@ export default async function UserAppLayout({ children }: { children: React.Reac
     .select("full_name")
     .eq("id", user.id)
     .maybeSingle();
+
+  const { count: unread } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .is("read_at", null);
 
   const displayName = profile?.full_name || user.email?.split("@")[0] || "User";
 
@@ -31,7 +38,7 @@ export default async function UserAppLayout({ children }: { children: React.Reac
         </Link>
 
         {/* Nav links */}
-        <UserDesktopNav />
+        <UserDesktopNav userId={user.id} initialUnread={unread ?? 0} />
 
         {/* User info + controls */}
         <div className="p-3 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-1">
@@ -54,7 +61,10 @@ export default async function UserAppLayout({ children }: { children: React.Reac
             Errand<span className="text-gray-900 dark:text-slate-100">boi</span>
           </span>
         </Link>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <NotificationBell userId={user.id} initialUnread={unread ?? 0} />
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* ── Main content ── */}

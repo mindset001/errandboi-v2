@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendPushToUser } from "@/lib/push";
+import { notifyUser } from "@/lib/notify";
 
 export async function POST(req: NextRequest) {
   // Verify driver identity via their session
@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
 
   if (order) {
     const isRide = order.order_type === "ride";
-    sendPushToUser(order.user_id, {
+    await notifyUser(order.user_id, {
+      type: "order",
       title: isRide ? "🏍️ Driver on the way!" : "🛒 Agent assigned!",
       body: isRide
         ? `Your ${order.vehicle_type} is on the way. Track your ride.`

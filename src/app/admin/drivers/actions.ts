@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { VehicleType } from "@/types";
+import { notifyUser } from "@/lib/notify";
 import { requireAdmin } from "@/lib/admin-guard";
+
+async function notifyDriver(driverId: string, title: string, body: string) {
+  const { data } = await createClient().from("drivers").select("auth_user_id").eq("id", driverId).maybeSingle();
+  if (data?.auth_user_id) await notifyUser(data.auth_user_id, { type: "account", title, body, url: "/driver/dashboard" });
+}
 
 export async function toggleDriverAvailability(driverId: string, current: boolean) {
   await requireAdmin();
@@ -34,6 +40,7 @@ export async function approveDriver(driverId: string) {
     .from("drivers")
     .update({ status: "approved", is_available: false })
     .eq("id", driverId);
+  await notifyDriver(driverId, "🎉 You're approved!", "Your driver account has been approved. You can now go online and accept orders.");
   revalidatePath("/admin/drivers");
 }
 
@@ -44,6 +51,7 @@ export async function rejectDriver(driverId: string) {
     .from("drivers")
     .update({ status: "rejected", is_available: false })
     .eq("id", driverId);
+  await notifyDriver(driverId, "Application not approved", "Your driver application was not approved. Please contact support for more information.");
   revalidatePath("/admin/drivers");
 }
 

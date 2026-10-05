@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Bike, ShoppingCart, PackageSearch, LogOut } from "lucide-react";
+import { LayoutDashboard, Bike, ShoppingCart, PackageSearch, Bell, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import UnreadBadge from "@/components/notifications/UnreadBadge";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -13,7 +14,7 @@ const NAV_ITEMS = [
   { href: "/orders", label: "My Orders", icon: PackageSearch },
 ];
 
-export function UserDesktopNav() {
+export function UserDesktopNav({ userId, initialUnread }: { userId: string; initialUnread: number }) {
   const pathname = usePathname();
 
   return (
@@ -36,6 +37,19 @@ export function UserDesktopNav() {
           </Link>
         );
       })}
+      <Link
+        href="/notifications"
+        className={cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+          pathname === "/notifications"
+            ? "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400"
+            : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
+        )}
+      >
+        <Bell className="h-4 w-4 flex-shrink-0" />
+        Notifications
+        <UnreadBadge userId={userId} initial={initialUnread} className="ml-auto" />
+      </Link>
     </nav>
   );
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendPushToUser } from "@/lib/push";
+import { notifyUser } from "@/lib/notify";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   const isRide = order.order_type === "ride";
-  sendPushToUser(order.user_id, {
+  await notifyUser(order.user_id, {
+    type: "order",
     title: isRide ? "🚗 Trip completed!" : "📦 Your items are here!",
     body: isRide
       ? "Your driver has ended the trip. Please confirm to release payment."

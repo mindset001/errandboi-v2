@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendPushToUser } from "@/lib/push";
+import { notifyUser } from "@/lib/notify";
 import { requireAdmin } from "@/lib/admin-guard";
 
 async function getDriverAuthUserId(withdrawalId: string) {
@@ -32,7 +32,8 @@ export async function markPaid(id: string, note: string) {
 
   const authUserId = await getDriverAuthUserId(id);
   if (authUserId) {
-    sendPushToUser(authUserId, {
+    await notifyUser(authUserId, {
+      type: "withdrawal",
       title: "💰 Withdrawal paid!",
       body: "Your withdrawal request has been processed and sent to your bank account.",
       url: "/driver/dashboard",
@@ -56,7 +57,8 @@ export async function rejectWithdrawal(id: string, note: string) {
 
   const authUserId = await getDriverAuthUserId(id);
   if (authUserId) {
-    sendPushToUser(authUserId, {
+    await notifyUser(authUserId, {
+      type: "withdrawal",
       title: "❌ Withdrawal rejected",
       body: note ? `Reason: ${note}` : "Your withdrawal request was not approved. Contact support for details.",
       url: "/driver/dashboard",

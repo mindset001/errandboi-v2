@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { refundPaystackTransaction } from "@/lib/paystack";
+import { notifyUser } from "@/lib/notify";
 
 export const SERVICE_FEE = 500;
 
@@ -14,6 +15,7 @@ interface PayableOrder {
   payment_status: string;
   items_payment_status: string | null;
   status?: string;
+  user_id?: string; // when present, the customer is notified of the payment
 }
 
 /** Naira amount the customer owes for the given payment leg. */
@@ -88,5 +90,14 @@ export async function applyPayment(
     .eq(type === "items" ? "items_payment_status" : "payment_status", "unpaid");
 
   if (error) return { ok: false, error: error.message, status: 500 };
+
+  if (order.user_id) {
+    await notifyUser(order.user_id, {
+      type: "payment",
+      title: "✅ Payment received",
+      body: `We received your payment of ₦${expected.toLocaleString("en-NG")}.`,
+      url: `/orders/${order.id}`,
+    });
+  }
   return { ok: true };
 }

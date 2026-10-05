@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       const { data: order } = await admin
         .from("orders")
         .select(
-          "id, order_type, status, fare, total, service_fee, payment_status, items_payment_status, payment_reference, items_payment_reference"
+          "id, user_id, order_type, status, fare, total, service_fee, payment_status, items_payment_status, payment_reference, items_payment_reference"
         )
         .or(`payment_reference.eq.${reference},items_payment_reference.eq.${reference}`)
         .maybeSingle();

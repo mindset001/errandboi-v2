@@ -114,6 +114,7 @@ export default async function DriverDashboardPage() {
       driver={driver}
       initialOrders={orders ?? []}
       pending={driver.status === "pending"}
+      userId={user.id}
     />
   );
 }

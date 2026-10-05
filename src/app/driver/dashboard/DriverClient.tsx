@@ -5,13 +5,16 @@ import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import {
   MapPin, Phone, CheckCircle, Navigation, Wifi, WifiOff,
-  LogOut, Home, User, UploadCloud, Star, TrendingUp, Banknote, ChevronDown, ChevronUp,
+  LogOut, Home, User, UploadCloud, Star, TrendingUp, Banknote, ChevronDown, ChevronUp, Bell,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { apiFetch, postJson } from "@/lib/api";
 import { driverPayout } from "@/lib/commission";
 import IncomingOrders, { type IncomingOrder } from "./IncomingOrders";
 import PushSubscriber from "@/components/PushSubscriber";
+import NotificationsList from "@/components/notifications/NotificationsList";
+import { CountPill } from "@/components/notifications/UnreadBadge";
+import { useUnreadCount } from "@/components/notifications/useUnreadCount";
 
 const DriverMap = dynamic(() => import("./DriverMap"), { ssr: false });
 
@@ -58,7 +61,7 @@ type Order = {
   delivery_lng: number | null;
 };
 
-type Tab = "home" | "earnings" | "profile";
+type Tab = "home" | "earnings" | "alerts" | "profile";
 
 const RIDE_ACTIONS: Record<string, { label: string; next: string }> = {
   accepted: { label: "Start Trip", next: "in_progress" },
@@ -78,10 +81,12 @@ export default function DriverClient({
   driver: initialDriver,
   initialOrders,
   pending = false,
+  userId,
 }: {
   driver: Driver;
   initialOrders: Order[];
   pending?: boolean;
+  userId: string;
 }) {
   const supabase = createClient();
   const [driver, setDriver] = useState(initialDriver);
@@ -95,6 +100,7 @@ export default function DriverClient({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>(pending ? "profile" : "home");
   const [actionError, setActionError] = useState("");
+  const unread = useUnreadCount(userId);
 
   const sendLocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -166,6 +172,7 @@ export default function DriverClient({
   const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "home", label: "Home", icon: <Home className="h-5 w-5" /> },
     { id: "earnings", label: "Earnings", icon: <TrendingUp className="h-5 w-5" /> },
+    { id: "alerts", label: "Alerts", icon: <Bell className="h-5 w-5" /> },
     { id: "profile", label: "Profile & KYC", icon: <User className="h-5 w-5" /> },
   ];
 
@@ -208,6 +215,7 @@ export default function DriverClient({
               {item.id === "profile" && pending && (
                 <span className="ml-auto h-2 w-2 rounded-full bg-amber-400 flex-shrink-0" />
               )}
+              {item.id === "alerts" && <CountPill count={unread} className="ml-auto" />}
             </button>
           ))}
         </nav>
@@ -282,6 +290,11 @@ export default function DriverClient({
             />
           ) : tab === "earnings" ? (
             <EarningsTab driverId={driver.id} />
+          ) : tab === "alerts" ? (
+            <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6">
+              <h2 className="text-xl font-bold text-white mb-4">Alerts</h2>
+              <NotificationsList userId={userId} dark />
+            </div>
           ) : (
             <ProfileTab
               driver={driver}
@@ -308,6 +321,9 @@ export default function DriverClient({
               {item.label}
               {item.id === "profile" && pending && (
                 <span className="absolute top-2 right-[calc(50%-16px)] h-2 w-2 rounded-full bg-amber-400" />
+              )}
+              {item.id === "alerts" && (
+                <CountPill count={unread} className="absolute top-1.5 right-[calc(50%-24px)] min-w-4 h-4 px-1 text-[10px]" />
               )}
             </button>
           ))}

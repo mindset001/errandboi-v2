@@ -72,6 +72,7 @@ export const config = {
     "/driver/:path*",
     "/dashboard/:path*",
     "/orders/:path*",
+    "/notifications/:path*",
     "/book/:path*",
     "/auth/:path*",
   ],

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendPushToUser } from "@/lib/push";
+import { notifyUser } from "@/lib/notify";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
 
   if (order?.drivers) {
     const driverAuthId = (order.drivers as unknown as { auth_user_id: string }).auth_user_id;
-    sendPushToUser(driverAuthId, {
+    await notifyUser(driverAuthId, {
+      type: "order",
       title: "✅ Delivery confirmed!",
       body: order.order_type === "errand"
         ? "The customer confirmed receipt. Your earnings have been credited."
