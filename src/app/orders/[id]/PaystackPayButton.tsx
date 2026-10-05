@@ -83,7 +83,7 @@ export function PaystackPayButton({
         const json = await res.json().catch(() => ({}));
         setError(json.error ?? "Payment verification failed. Contact support.");
       } catch {
-        setError("Network error during verification. Please contact support.");
+        setError("We couldn't confirm your payment just yet. If you were charged, it will be applied automatically — refresh this page in a minute.");
       }
       setPaying(false);
     }
@@ -94,7 +94,7 @@ export function PaystackPayButton({
         email,
         amount: Math.round(amount * 100),
         ref,
-        metadata: { orderId },
+        metadata: { orderId, paymentType: paymentType ?? "order" },
         callback: function(response) {
           clearSafety();
           verify(response.reference);

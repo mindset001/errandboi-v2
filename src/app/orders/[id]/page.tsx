@@ -253,6 +253,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-500/15 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400">
                 <CheckCircle className="h-3.5 w-3.5" /> {isRide ? "Paid" : "Service fee paid"}
               </span>
+            ) : order.payment_status === "refunded" || order.items_payment_status === "refunded" ? (
+              <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-700 dark:text-blue-400">
+                Refunded
+              </span>
             ) : order.status !== "cancelled" ? (
               <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
                 Unpaid

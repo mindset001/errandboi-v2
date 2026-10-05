@@ -7,6 +7,7 @@ import { Mail, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export default function LoginPage() {
             </div>
           )}
           <Input label="Email address" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} icon={<Mail className="h-4 w-4" />} required />
-          <Input label="Password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} icon={<Lock className="h-4 w-4" />} required />
+          <PasswordInput label="Password" placeholder="••••••••" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} icon={<Lock className="h-4 w-4" />} required />
           <Button type="submit" loading={loading} className="mt-2">Sign in</Button>
           <p className="text-center text-sm text-gray-500 dark:text-slate-400">
             Don&apos;t have an account?{" "}

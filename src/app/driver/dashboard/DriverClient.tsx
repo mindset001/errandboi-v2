@@ -8,6 +8,7 @@ import {
   LogOut, Home, User, UploadCloud, Star, TrendingUp, Banknote, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { apiFetch, postJson } from "@/lib/api";
 import { driverPayout } from "@/lib/commission";
 import IncomingOrders, { type IncomingOrder } from "./IncomingOrders";
 import PushSubscriber from "@/components/PushSubscriber";
@@ -93,6 +94,7 @@ export default function DriverClient({
   );
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>(pending ? "profile" : "home");
+  const [actionError, setActionError] = useState("");
 
   const sendLocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -127,7 +129,14 @@ export default function DriverClient({
 
   async function advanceStatus(orderId: string, nextStatus: string) {
     setActionLoading(orderId);
-    await supabase.from("orders").update({ status: nextStatus }).eq("id", orderId);
+    setActionError("");
+    const res = await postJson("/api/orders/status", { orderId, status: nextStatus });
+    if (!res.ok) {
+      setActionLoading(null);
+      setActionError(res.data.error ?? "Could not update the order. Please try again.");
+      setTimeout(() => setActionError(""), 5000);
+      return;
+    }
 
     // Notify customer when driver marks complete
     if (nextStatus === "awaiting_confirmation") {
@@ -162,6 +171,11 @@ export default function DriverClient({
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row">
+      {actionError && (
+        <div role="alert" className="fixed top-4 inset-x-4 z-50 mx-auto max-w-sm rounded-xl bg-red-900/90 border border-red-700 px-4 py-3 text-sm text-red-200 shadow-lg">
+          {actionError}
+        </div>
+      )}
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex flex-col w-60 bg-slate-900 border-r border-slate-800 min-h-screen sticky top-0">
         {/* Logo */}
@@ -635,14 +649,11 @@ function WithdrawalForm({ available, onSuccess }: { available: number; onSuccess
     if (amt > available) { setError(`Max available is ${formatCurrency(available)}`); return; }
     setError(""); setSubmitting(true);
 
-    const res = await fetch("/api/driver/withdrawal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: amt, bank_name: bankName, account_number: accountNumber, account_name: accountName }),
+    const res = await postJson("/api/driver/withdrawal", {
+      amount: amt, bank_name: bankName, account_number: accountNumber, account_name: accountName,
     });
-    const json = await res.json();
     setSubmitting(false);
-    if (!res.ok) { setError(json.error ?? "Failed to submit"); return; }
+    if (!res.ok) { setError(res.data.error ?? "Failed to submit"); return; }
     onSuccess({
       id: crypto.randomUUID(),
       amount: amt,
@@ -715,7 +726,6 @@ function ProfileTab({
   onDocUploaded: (slot: "license" | "nin" | "photo", url: string) => void;
   onProfileSaved: (fields: Partial<Driver>) => void;
 }) {
-  const supabase = createClient();
   const [vehicleType, setVehicleType] = useState(driver.vehicle_type || "bike");
   const [vehiclePlate, setVehiclePlate] = useState(driver.vehicle_plate || "");
   const [licenseNumber, setLicenseNumber] = useState(driver.license_number || "");
@@ -735,9 +745,13 @@ function ProfileTab({
       nin: nin.trim() || null,
       home_address: homeAddress.trim() || null,
     };
-    const { error } = await supabase.from("drivers").update(fields).eq("id", driver.id);
+    const res = await postJson("/api/driver/profile", fields);
     setSaving(false);
-    if (error) { setSaveStatus("error"); setSaveError(error.message); return; }
+    if (!res.ok) {
+      setSaveStatus("error");
+      setSaveError(res.data.error ?? "Could not save. Please try again.");
+      return;
+    }
     setSaveStatus("saved");
     onProfileSaved(fields);
     setTimeout(() => setSaveStatus("idle"), 3000);
@@ -876,10 +890,9 @@ function PhotoUploadField({ currentUrl, onUploaded }: {
     const fd = new FormData();
     fd.append("slot", "photo");
     fd.append("file", file);
-    const res = await fetch("/api/driver/kyc-upload", { method: "POST", body: fd });
-    const json = await res.json();
+    const res = await apiFetch("/api/driver/kyc-upload", { method: "POST", body: fd }, 60_000);
     setUploading(false);
-    if (res.ok) { setLocalUrl(json.url); onUploaded(json.url); }
+    if (res.ok) { setLocalUrl(res.data.url); onUploaded(res.data.url); }
   }
 
   return (
@@ -929,12 +942,11 @@ function DocUploadField({
     const fd = new FormData();
     fd.append("slot", slot);
     fd.append("file", file);
-    const res = await fetch("/api/driver/kyc-upload", { method: "POST", body: fd });
-    const json = await res.json();
+    const res = await apiFetch("/api/driver/kyc-upload", { method: "POST", body: fd }, 60_000);
     setUploading(false);
-    if (!res.ok) { setError(json.error ?? "Upload failed"); return; }
-    setLocalUrl(json.url);
-    onUploaded(json.url);
+    if (!res.ok) { setError(res.data.error ?? "Upload failed"); return; }
+    setLocalUrl(res.data.url);
+    onUploaded(res.data.url);
   }
 
   return (

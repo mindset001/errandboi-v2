@@ -47,7 +47,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 antialiased">
+      <body
+        className="min-h-full flex flex-col bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 antialiased"
+        // Browser extensions (e.g. Grammarly) inject attributes onto <body> before React hydrates
+        suppressHydrationWarning
+      >
         <ThemeProvider>{children}</ThemeProvider>
         <ServiceWorkerRegister />
       </body>

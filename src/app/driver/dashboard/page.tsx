@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { signKycUrl } from "@/lib/kyc";
 import DriverClient from "./DriverClient";
 
 export const dynamic = "force-dynamic";
@@ -11,35 +12,46 @@ export default async function DriverDashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/driver/login");
 
-  const { data: driver } = await supabase
+  const { data: base } = await supabase
     .from("drivers")
-    .select("id, full_name, phone, vehicle_type, vehicle_plate, rating, is_available, latitude, longitude, status, license_number, nin, license_url, nin_url, profile_photo_url, home_address")
+    .select("id, full_name, phone, vehicle_type, vehicle_plate, rating, is_available, latitude, longitude, status")
     .eq("auth_user_id", user.id)
     .single();
+
+  // Identity details and document paths live in driver_kyc (owner-only RLS).
+  // Documents are private; hand the browser short-lived signed URLs.
+  let driver = null;
+  if (base) {
+    const { data: kyc } = await supabase
+      .from("driver_kyc")
+      .select("license_number, nin, home_address, license_path, nin_path, photo_path")
+      .eq("driver_id", base.id)
+      .maybeSingle();
+    const admin = createAdminClient();
+    const [license_url, nin_url, profile_photo_url] = await Promise.all([
+      signKycUrl(admin, kyc?.license_path),
+      signKycUrl(admin, kyc?.nin_path),
+      signKycUrl(admin, kyc?.photo_path),
+    ]);
+    driver = {
+      ...base,
+      license_number: kyc?.license_number ?? null,
+      nin: kyc?.nin ?? null,
+      home_address: kyc?.home_address ?? null,
+      license_url,
+      nin_url,
+      profile_photo_url,
+    };
+  }
 
   if (!driver) {
     const admin = createAdminClient();
     const meta = user.user_metadata ?? {};
     const phone = meta.phone || "";
 
-    // Try to claim an existing unlinked row (e.g. admin-added or from before auth_user_id existed)
-    if (phone) {
-      const { data: unlinked } = await admin
-        .from("drivers")
-        .select("id")
-        .eq("phone", phone)
-        .is("auth_user_id", null)
-        .maybeSingle();
-
-      if (unlinked) {
-        await admin
-          .from("drivers")
-          .update({ auth_user_id: user.id, status: "pending" })
-          .eq("id", unlinked.id);
-        redirect("/driver/onboarding");
-      }
-    }
-
+    // Never auto-claim an existing record by phone number: user_metadata is
+    // user-controlled, so that would let anyone take over a driver's record.
+    // Admins link existing drivers to accounts explicitly.
     // No existing row — insert a fresh pending record
     const { error: insertError } = await admin.from("drivers").insert({
       full_name: meta.full_name || "Driver",

@@ -1,5 +1,6 @@
 "use client";
 
+import { postJson } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency } from "@/lib/utils";
@@ -92,16 +93,12 @@ export default function IncomingOrders({
     setAccepting(order.id);
     setErrorMap((prev) => { const next = { ...prev }; delete next[order.id]; return next; });
 
-    const res = await fetch("/api/orders/accept", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: order.id }),
-    });
-    const json = await res.json();
+    const res = await postJson("/api/orders/accept", { orderId: order.id });
+    const json = res.data;
     setAccepting(null);
 
     if (!res.ok) {
-      if (res.status === 409) {
+      if (res.status === 409 && json.code !== "driver_busy") {
         setOrders((prev) => prev.filter((o) => o.id !== order.id));
       } else {
         setErrorMap((prev) => ({ ...prev, [order.id]: json.error ?? "Failed to accept" }));

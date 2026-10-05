@@ -1,25 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
-
-async function verifyAdminToken(token: string): Promise<boolean> {
-  const secret = process.env.ADMIN_SECRET!;
-  const password = process.env.ADMIN_PASSWORD!;
-
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(password));
-  const expected = Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  return token === expected;
-}
+import { verifyAdminToken } from "@/lib/admin-auth";
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -28,7 +9,7 @@ export async function proxy(req: NextRequest) {
   if (pathname.startsWith("/admin")) {
     if (!pathname.startsWith("/admin/login")) {
       const token = req.cookies.get("errandboi_admin")?.value;
-      if (!token || !(await verifyAdminToken(token))) {
+      if (!verifyAdminToken(token)) {
         const url = req.nextUrl.clone();
         url.pathname = "/admin/login";
         return NextResponse.redirect(url);
@@ -41,6 +22,13 @@ export async function proxy(req: NextRequest) {
   // fresh before the page server component runs. This prevents the "Lock broken
   // by another request with the 'steal' option" race condition that happens when
   // a server component refreshes the token and then redirect() fires immediately.
+  // Public auth pages and anonymous visitors have no session to refresh, so
+  // don't make a network round-trip to Supabase on their behalf.
+  const hasSession = req.cookies.getAll().some((c) => c.name.startsWith("sb-"));
+  if (!hasSession || pathname === "/auth/login" || pathname === "/auth/signup" || pathname === "/driver/login") {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request: req });
 
   const supabase = createServerClient(
@@ -63,7 +51,17 @@ export async function proxy(req: NextRequest) {
   );
 
   // Refreshes the session if expired — must be called before any page logic
-  await supabase.auth.getUser();
+  // Bounded so an unreachable Supabase can't stall every request for ~25s.
+  try {
+    await Promise.race([
+      supabase.auth.getUser(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("supabase getUser timeout")), 4000)
+      ),
+    ]);
+  } catch (err) {
+    console.error("[proxy] session refresh skipped:", err);
+  }
 
   return response;
 }

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MapPin, Navigation } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { VehicleType, FareEstimate } from "@/types";
-import { estimateFares, haversineDistance, formatCurrency, generateReference } from "@/lib/utils";
+import { estimateFares, formatCurrency } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import PlacesAutocomplete from "@/components/ui/PlacesAutocomplete";
 
@@ -28,6 +28,8 @@ function RideBookingForm() {
   const [step, setStep] = useState<"form" | "select" | "success">("form");
   const [orderId, setOrderId] = useState("");
   const [bookingError, setBookingError] = useState("");
+  const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMinutes: number | null } | null>(null);
+  const [estimating, setEstimating] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -35,17 +37,31 @@ function RideBookingForm() {
     });
   }, []);
 
-  function handleEstimate(e: { preventDefault(): void }) {
+  async function handleEstimate(e: { preventDefault(): void }) {
     e.preventDefault();
     if (!pickup.address || !dropoff.address) return;
+    setEstimating(true);
 
-    // Use real coordinates if both are set, otherwise fall back to 5 km demo
-    const dist =
-      pickup.lat && dropoff.lat
-        ? haversineDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng)
-        : 5;
+    let distanceKm = 5;
+    let durationMinutes: number | null = null;
 
-    setFares(estimateFares(Math.max(dist, 0.5)));
+    if (pickup.lat && dropoff.lat) {
+      try {
+        const res = await fetch(
+          `/api/route-estimate?originLat=${pickup.lat}&originLng=${pickup.lng}&destLat=${dropoff.lat}&destLng=${dropoff.lng}`
+        );
+        const data = await res.json();
+        if (data.distanceKm) distanceKm = data.distanceKm;
+        if (data.durationMinutes) durationMinutes = data.durationMinutes;
+      } catch {
+        // silently fall back to haversine already handled server-side
+      }
+    }
+
+    const route = { distanceKm: Math.max(distanceKm, 0.5), durationMinutes };
+    setRouteInfo(route);
+    setFares(estimateFares(route.distanceKm, route.durationMinutes));
+    setEstimating(false);
     setStep("select");
   }
 
@@ -53,29 +69,35 @@ function RideBookingForm() {
     if (!user) { router.push("/auth/login"); return; }
     setLoading(true);
 
-    const chosenFare = fares.find((f) => f.vehicle_type === selected)!;
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        order_type: "ride",
-        vehicle_type: selected,
-        pickup_address: pickup.address,
-        pickup_lat: pickup.lat || 6.5244,
-        pickup_lng: pickup.lng || 3.3792,
-        dropoff_address: dropoff.address,
-        dropoff_lat: dropoff.lat || 6.5744,
-        dropoff_lng: dropoff.lng || 3.3892,
-        fare: chosenFare.estimated_fare,
-        status: "pending",
-        payment_reference: generateReference(),
-      })
-      .select()
-      .single();
+    // The server prices the ride and creates the order; the fare shown here is an estimate.
+    let data: { id: string } | null = null;
+    let errorMsg = "";
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_type: "ride",
+          vehicle_type: selected,
+          pickup_address: pickup.address,
+          pickup_lat: pickup.lat || 6.5244,
+          pickup_lng: pickup.lng || 3.3792,
+          dropoff_address: dropoff.address,
+          dropoff_lat: dropoff.lat || 6.5744,
+          dropoff_lng: dropoff.lng || 3.3892,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) data = json.order;
+      else errorMsg = json.error;
+    } catch {
+      errorMsg = "Network error. Please try again.";
+    }
 
     setLoading(false);
-    if (error) { setBookingError(error.message || "Failed to place order. Please try again."); return; }
-    if (data) { setOrderId(data.id); setStep("success"); }
+    if (!data) { setBookingError(errorMsg || "Failed to place order. Please try again."); return; }
+    setOrderId(data.id);
+    setStep("success");
   }
 
   const chosenFare = fares.find((f) => f.vehicle_type === selected);
@@ -123,7 +145,9 @@ function RideBookingForm() {
             onSelect={(p) => setDropoff(p)}
             onChange={(v) => setDropoff((prev) => ({ ...prev, address: v }))}
           />
-          <Button type="submit" size="lg">See available vehicles</Button>
+          <Button type="submit" loading={estimating} size="lg">
+            {estimating ? "Getting route…" : "See available vehicles"}
+          </Button>
         </form>
       )}
 
@@ -132,6 +156,18 @@ function RideBookingForm() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-4">
             <p className="text-xs text-gray-400 dark:text-slate-500 mb-1">Route</p>
             <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">{pickup.address} → {dropoff.address}</p>
+            {routeInfo && (
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xs font-semibold text-orange-500">
+                  📍 {routeInfo.distanceKm.toFixed(1)} km
+                </span>
+                {routeInfo.durationMinutes && (
+                  <span className="text-xs font-semibold text-blue-500">
+                    🚗 {routeInfo.durationMinutes} min by car
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-3">

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToUser } from "@/lib/push";
+import { requireAdmin } from "@/lib/admin-guard";
 
 async function getDriverAuthUserId(withdrawalId: string) {
   const admin = createAdminClient();
@@ -16,9 +17,18 @@ async function getDriverAuthUserId(withdrawalId: string) {
 }
 
 export async function markPaid(id: string, note: string) {
+  await requireAdmin();
   const admin = createAdminClient();
-  await admin.from("withdrawals").update({ status: "paid", admin_note: note || null }).eq("id", id);
+  // Only a pending request can be settled — never flip a finished one.
+  const { data: changed } = await admin
+    .from("withdrawals")
+    .update({ status: "paid", admin_note: note || null })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
   revalidatePath("/admin/withdrawals");
+  if (!changed) return;
 
   const authUserId = await getDriverAuthUserId(id);
   if (authUserId) {
@@ -31,9 +41,18 @@ export async function markPaid(id: string, note: string) {
 }
 
 export async function rejectWithdrawal(id: string, note: string) {
+  await requireAdmin();
   const admin = createAdminClient();
-  await admin.from("withdrawals").update({ status: "rejected", admin_note: note || null }).eq("id", id);
+  // Only a pending request can be settled — never flip a finished one.
+  const { data: changed } = await admin
+    .from("withdrawals")
+    .update({ status: "rejected", admin_note: note || null })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
   revalidatePath("/admin/withdrawals");
+  if (!changed) return;
 
   const authUserId = await getDriverAuthUserId(id);
   if (authUserId) {

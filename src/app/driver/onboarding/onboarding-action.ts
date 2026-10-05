@@ -3,31 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { VehicleType } from "@/types";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parseDriverProfile, saveDriverProfile } from "@/lib/kyc";
 
 export async function submitDriverProfile(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/driver/login");
 
-  const vehicleType = formData.get("vehicle_type") as VehicleType;
-  const vehiclePlate = (formData.get("vehicle_plate") as string).trim().toUpperCase();
-  const licenseNumber = (formData.get("license_number") as string).trim().toUpperCase();
-  const nin = (formData.get("nin") as string | null)?.trim() ?? "";
-  const homeAddress = (formData.get("home_address") as string | null)?.trim() ?? "";
+  const input = parseDriverProfile({
+    vehicle_type: formData.get("vehicle_type"),
+    vehicle_plate: formData.get("vehicle_plate"),
+    license_number: formData.get("license_number"),
+    nin: formData.get("nin"),
+    home_address: formData.get("home_address"),
+  });
+  if (!input) throw new Error("Please check your details and try again.");
 
-  const { error } = await supabase
+  const { data: driver } = await supabase
     .from("drivers")
-    .update({
-      vehicle_type: vehicleType,
-      vehicle_plate: vehiclePlate,
-      license_number: licenseNumber,
-      nin: nin || null,
-      home_address: homeAddress || null,
-    })
-    .eq("auth_user_id", user.id);
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .single();
+  if (!driver) redirect("/driver/login");
 
-  if (error) throw new Error(error.message);
+  const error = await saveDriverProfile(createAdminClient(), driver.id, input);
+  if (error) throw new Error(error);
 
   revalidatePath("/driver/dashboard");
   redirect("/driver/dashboard");

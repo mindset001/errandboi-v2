@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/admin-guard";
 
 export async function linkDriverAccount(driverId: string, email: string) {
+  await requireAdmin();
   const supabase = createClient();
 
   const { data: { users }, error } = await supabase.auth.admin.listUsers({ perPage: 1000 });
