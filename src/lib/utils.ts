@@ -24,12 +24,28 @@ const FARE_CONFIG: Record<VehicleType, { label: string; icon: string; base: numb
   car: { label: "Car", icon: "🚗", base: 1200, perKm: 150 },
 };
 
-export function estimateFares(distanceKm: number): FareEstimate[] {
+/**
+ * @param distanceKm   Road distance from Distance Matrix API (or haversine fallback)
+ * @param carMinutes   Driving duration from Distance Matrix API — null means estimate from speed
+ */
+export function estimateFares(distanceKm: number, carMinutes: number | null = null): FareEstimate[] {
   const vehicles: VehicleType[] = ["bike", "tricycle", "car"];
+  // ETA multipliers relative to car driving time (bikes beat traffic, keke similar to car)
+  const etaFactor: Record<VehicleType, number> = { bike: 0.65, tricycle: 1.0, car: 1.0 };
+
   return vehicles.map((type) => {
     const config = FARE_CONFIG[type];
     const fare = config.base + config.perKm * distanceKm;
-    const eta = Math.round(distanceKm / (type === "bike" ? 0.5 : type === "tricycle" ? 0.4 : 0.6));
+
+    let eta: number;
+    if (carMinutes !== null) {
+      eta = Math.round(carMinutes * etaFactor[type]);
+    } else {
+      // Fallback: estimate from assumed speed when no API data
+      const speedKmPerMin = type === "bike" ? 0.55 : type === "tricycle" ? 0.4 : 0.5;
+      eta = Math.round(distanceKm / speedKmPerMin);
+    }
+
     return {
       vehicle_type: type,
       label: config.label,
@@ -37,7 +53,7 @@ export function estimateFares(distanceKm: number): FareEstimate[] {
       base_fare: config.base,
       per_km: config.perKm,
       estimated_fare: Math.round(fare),
-      eta_minutes: Math.max(5, eta),
+      eta_minutes: Math.max(3, eta),
     };
   });
 }

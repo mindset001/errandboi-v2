@@ -1,7 +1,7 @@
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { formatCurrency } from "@/lib/utils";
 import { OrderStatus } from "@/types";
-import { updateOrderStatus, assignDriver } from "./actions";
+import { updateOrderStatus, assignDriver, retryRefund } from "./actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +43,11 @@ export default async function AdminOrdersPage({
     supabase.from("drivers").select("id, full_name, vehicle_type, is_available").order("full_name"),
   ]);
 
+  const { data: refunds } = await supabase
+    .from("orders")
+    .select("id, order_type, fare, total, refund_status, refund_error")
+    .in("refund_status", ["pending", "failed"]);
+
   const userIds = [...new Set((orders ?? []).map((o) => o.user_id))];
   const { data: profiles } = userIds.length
     ? await supabase.from("profiles").select("id, full_name, phone").in("id", userIds)
@@ -55,6 +60,36 @@ export default async function AdminOrdersPage({
         <h1 className="text-2xl font-extrabold text-white">Orders</h1>
         <p className="text-slate-400 mt-1 text-sm">{orders?.length ?? 0} orders found</p>
       </div>
+
+      {(refunds ?? []).length > 0 && (
+        <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-red-500/20">
+            <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wide">
+              Refunds needing attention ({refunds!.length})
+            </h2>
+          </div>
+          <ul className="divide-y divide-red-500/10">
+            {refunds!.map((r) => (
+              <li key={r.id} className="px-5 py-3 flex items-center justify-between gap-4 text-sm">
+                <div className="min-w-0">
+                  <p className="text-slate-200">
+                    <span className="font-mono text-xs text-slate-400">#{r.id.slice(0, 8)}</span>{" "}
+                    {r.order_type === "ride" ? "Ride" : "Errand"} · {formatCurrency(Number(r.fare ?? r.total ?? 0))}
+                  </p>
+                  <p className="text-xs text-red-300 truncate">
+                    {r.refund_status === "pending" ? "Refund in progress or interrupted" : r.refund_error ?? "Refund failed"}
+                  </p>
+                </div>
+                <form action={retryRefund.bind(null, r.id)}>
+                  <SubmitButton pendingText="Retrying…" className="rounded-lg bg-red-500/20 hover:bg-red-500/30 px-3 py-1.5 text-xs font-semibold text-red-300">
+                    Retry refund
+                  </SubmitButton>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">

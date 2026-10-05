@@ -1,11 +1,13 @@
 "use client";
 
+import { postJson } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +18,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   function update(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,12 +44,13 @@ export default function SignupPage() {
     setLoading(true);
 
     // Pre-flight duplicate check (email + phone)
-    const checkRes = await fetch("/api/auth/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: form.email, phone: form.phone }),
-    });
-    const dupErrors = await checkRes.json();
+    const checkRes = await postJson("/api/auth/check", { email: form.email, phone: form.phone });
+    if (!checkRes.ok && checkRes.status === 0) {
+      setFieldErrors({ email: checkRes.data.error });
+      setLoading(false);
+      return;
+    }
+    const dupErrors = checkRes.ok ? checkRes.data : {};
     if (Object.keys(dupErrors).length > 0) {
       setFieldErrors(dupErrors);
       setLoading(false);
@@ -73,12 +74,6 @@ export default function SignupPage() {
     setSuccess(true);
     setLoading(false);
   }
-
-  const EyeToggle = ({ show, onToggle }: { show: boolean; onToggle: () => void }) => (
-    <button type="button" onClick={onToggle} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition focus:outline-none">
-      {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-    </button>
-  );
 
   if (success) {
     return (
@@ -143,26 +138,24 @@ export default function SignupPage() {
             error={fieldErrors.phone}
             required
           />
-          <Input
+          <PasswordInput
             label="Password"
-            type={showPassword ? "text" : "password"}
             placeholder="Min. 8 characters"
+            autoComplete="new-password"
             value={form.password}
             onChange={update("password")}
             icon={<Lock className="h-4 w-4" />}
-            trailing={<EyeToggle show={showPassword} onToggle={() => setShowPassword((v) => !v)} />}
             error={fieldErrors.password}
             minLength={8}
             required
           />
-          <Input
+          <PasswordInput
             label="Confirm password"
-            type={showConfirm ? "text" : "password"}
             placeholder="Re-enter your password"
+            autoComplete="new-password"
             value={form.confirmPassword}
             onChange={update("confirmPassword")}
             icon={<Lock className="h-4 w-4" />}
-            trailing={<EyeToggle show={showConfirm} onToggle={() => setShowConfirm((v) => !v)} />}
             error={fieldErrors.confirmPassword}
             required
           />

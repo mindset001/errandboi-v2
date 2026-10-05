@@ -1,8 +1,10 @@
 "use client";
 
+import { postJson } from "@/lib/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import PasswordToggleButton from "@/components/ui/PasswordToggleButton";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,7 @@ export default function DriverLoginPage() {
   const [tab, setTab] = useState<Tab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
@@ -32,16 +35,14 @@ export default function DriverLoginPage() {
 
   async function handleSignup(e: { preventDefault(): void }) {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+    setLoading(true);
 
     // Create user via server-side admin API — no email verification required
-    const res = await fetch("/api/driver/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, fullName, phone }),
-    });
-    const json = await res.json();
+    const res = await postJson("/api/driver/signup", { email, password, fullName, phone });
+    const json = res.data;
 
     if (!res.ok || json.error) {
       setLoading(false);
@@ -78,7 +79,7 @@ export default function DriverLoginPage() {
           {(["login", "signup"] as Tab[]).map((t) => (
             <button
               key={t}
-              onClick={() => { setTab(t); setError(""); }}
+              onClick={() => { setTab(t); setError(""); setConfirmPassword(""); }}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
                 tab === t
                   ? "bg-orange-500 text-white"
@@ -109,7 +110,26 @@ export default function DriverLoginPage() {
           )}
 
           <Field label="Email address" type="email" value={email} onChange={setEmail} placeholder="you@example.com" required />
-          <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
+          <Field
+            label="Password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            placeholder={tab === "signup" ? "Min. 8 characters" : "••••••••"}
+            autoComplete={tab === "signup" ? "new-password" : "current-password"}
+            required
+          />
+          {tab === "signup" && (
+            <Field
+              label="Confirm password"
+              type="password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+              required
+            />
+          )}
 
           <button
             type="submit"
@@ -139,7 +159,7 @@ export default function DriverLoginPage() {
 }
 
 function Field({
-  label, type, value, onChange, placeholder, required,
+  label, type, value, onChange, placeholder, required, autoComplete,
 }: {
   label: string;
   type: string;
@@ -147,18 +167,29 @@ function Field({
   onChange: (v: string) => void;
   placeholder: string;
   required?: boolean;
+  autoComplete?: string;
 }) {
+  const [shown, setShown] = useState(false);
+  const isPassword = type === "password";
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-sm font-medium text-slate-300">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        placeholder={placeholder}
-        className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-900/40 transition"
-      />
+      <div className="relative">
+        <input
+          type={isPassword && shown ? "text" : type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          className={`w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-900/40 transition ${isPassword ? "pr-11" : ""}`}
+        />
+        {isPassword && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2">
+            <PasswordToggleButton shown={shown} onToggle={() => setShown((v) => !v)} className="text-slate-500 hover:text-slate-300" />
+          </span>
+        )}
+      </div>
     </div>
   );
 }

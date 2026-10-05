@@ -1,4 +1,5 @@
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
+import { signKycUrl } from "@/lib/kyc";
 import { addDriver, toggleDriverAvailability, deleteDriver, approveDriver, rejectDriver } from "./actions";
 import { linkDriverAccount } from "./link-action";
 import { PlusCircle, Trash2, Link, CheckCircle, XCircle } from "lucide-react";
@@ -8,15 +9,29 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDriversPage() {
   const supabase = createClient();
-  const { data: drivers } = await supabase
+  const { data: rows } = await supabase
     .from("drivers")
-    .select("*")
+    .select("*, driver_kyc(license_number, nin, license_path, nin_path)")
     .order("created_at", { ascending: false });
 
-  const pending = (drivers ?? []).filter((d) => d.status === "pending" && d.vehicle_plate && d.vehicle_plate !== "");
-  const incompleteProfile = (drivers ?? []).filter((d) => !d.vehicle_plate || d.vehicle_plate === "");
-  const approved = (drivers ?? []).filter((d) => d.status === "approved");
-  const rejected = (drivers ?? []).filter((d) => d.status === "rejected");
+  // KYC documents are private — mint short-lived signed links for this view only.
+  const drivers = await Promise.all(
+    (rows ?? []).map(async (d) => {
+      const kyc = (Array.isArray(d.driver_kyc) ? d.driver_kyc[0] : d.driver_kyc) ?? null;
+      return {
+        ...d,
+        license_number: kyc?.license_number ?? null,
+        nin: kyc?.nin ?? null,
+        license_url: await signKycUrl(supabase, kyc?.license_path),
+        nin_url: await signKycUrl(supabase, kyc?.nin_path),
+      };
+    })
+  );
+
+  const pending = drivers.filter((d) => d.status === "pending" && d.vehicle_plate && d.vehicle_plate !== "");
+  const incompleteProfile = drivers.filter((d) => !d.vehicle_plate || d.vehicle_plate === "");
+  const approved = drivers.filter((d) => d.status === "approved");
+  const rejected = drivers.filter((d) => d.status === "rejected");
 
   const available = approved.filter((d) => d.is_available).length;
   const total = approved.length;

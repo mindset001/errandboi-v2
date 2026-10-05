@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MapPin, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ErrandItem } from "@/types";
-import { formatCurrency, generateReference } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import PlacesAutocomplete from "@/components/ui/PlacesAutocomplete";
@@ -65,28 +65,33 @@ export default function ErrandPage() {
   async function handleSubmit() {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        order_type: "errand",
-        market_name: market,
-        delivery_address: delivery.address,
-        delivery_lat: delivery.lat || 6.5244,
-        delivery_lng: delivery.lng || 3.3792,
-        items,
-        budget: Number(budget) || 0,
-        service_fee: SERVICE_FEE,
-        total,
-        notes,
-        status: "pending",
-        payment_reference: generateReference(),
-        items_payment_reference: itemsTotal > 0 ? generateReference() : null,
-      })
-      .select().single();
+    let data: { id: string } | null = null;
+    let errorMsg = "";
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_type: "errand",
+          market_name: market,
+          delivery_address: delivery.address,
+          delivery_lat: delivery.lat || 6.5244,
+          delivery_lng: delivery.lng || 3.3792,
+          items,
+          budget: Number(budget) || 0,
+          notes,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) data = json.order;
+      else errorMsg = json.error;
+    } catch {
+      errorMsg = "Network error. Please try again.";
+    }
     setLoading(false);
-    if (error) { setBookingError(error.message || "Failed to place order. Please try again."); return; }
-    if (data) { setOrderId(data.id); setStep("success"); }
+    if (!data) { setBookingError(errorMsg || "Failed to place order. Please try again."); return; }
+    setOrderId(data.id);
+    setStep("success");
   }
 
   if (step === "success") {

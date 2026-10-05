@@ -1,13 +1,19 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { checkAdminPassword, makeAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { checkAdminPassword, makeAdminToken, ADMIN_COOKIE, ADMIN_SESSION_SECONDS } from "@/lib/admin-auth";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export async function adminLogin(formData: FormData) {
-  const password = formData.get("password") as string;
+  const password = formData.get("password");
 
-  if (!checkAdminPassword(password)) {
+  // 5 attempts per 15 minutes per IP
+  if (!rateLimit(`admin-login:${clientIp(await headers())}`, 5, 15 * 60 * 1000)) {
+    redirect("/admin/login?error=rate");
+  }
+
+  if (typeof password !== "string" || !checkAdminPassword(password)) {
     redirect("/admin/login?error=1");
   }
 
@@ -17,7 +23,7 @@ export async function adminLogin(formData: FormData) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 8, // 8 hours
+    maxAge: ADMIN_SESSION_SECONDS,
   });
 
   redirect("/admin/dashboard");

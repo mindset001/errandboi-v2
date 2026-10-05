@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircle } from "lucide-react";
+import { postJson } from "@/lib/api";
 
 export function ConfirmOrderButton({
   orderId,
@@ -20,16 +21,11 @@ export function ConfirmOrderButton({
   async function handleConfirm() {
     setLoading(true);
     setError("");
-    const res = await fetch("/api/orders/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId }),
-    });
+    const res = await postJson("/api/orders/confirm", { orderId });
     if (res.ok) {
       window.location.reload();
     } else {
-      const json = await res.json().catch(() => ({}));
-      setError(json.error ?? "Something went wrong. Please try again.");
+      setError(res.data.error ?? "Something went wrong. Please try again.");
       setLoading(false);
     }
   }

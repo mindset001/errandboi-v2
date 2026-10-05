@@ -3,14 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient as createClient } from "@/lib/supabase/admin";
 import { VehicleType } from "@/types";
+import { requireAdmin } from "@/lib/admin-guard";
 
 export async function toggleDriverAvailability(driverId: string, current: boolean) {
+  await requireAdmin();
   const supabase = createClient();
   await supabase.from("drivers").update({ is_available: !current }).eq("id", driverId);
   revalidatePath("/admin/drivers");
 }
 
 export async function addDriver(formData: FormData) {
+  await requireAdmin();
   const supabase = createClient();
   await supabase.from("drivers").insert({
     full_name: formData.get("full_name") as string,
@@ -25,6 +28,7 @@ export async function addDriver(formData: FormData) {
 }
 
 export async function approveDriver(driverId: string) {
+  await requireAdmin();
   const supabase = createClient();
   await supabase
     .from("drivers")
@@ -34,6 +38,7 @@ export async function approveDriver(driverId: string) {
 }
 
 export async function rejectDriver(driverId: string) {
+  await requireAdmin();
   const supabase = createClient();
   await supabase
     .from("drivers")
@@ -43,6 +48,7 @@ export async function rejectDriver(driverId: string) {
 }
 
 export async function deleteDriver(driverId: string) {
+  await requireAdmin();
   const supabase = createClient();
   await supabase.from("drivers").delete().eq("id", driverId);
   revalidatePath("/admin/drivers");

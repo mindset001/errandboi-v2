@@ -11,7 +11,22 @@ export async function POST(req: NextRequest) {
   const { orderId } = await req.json();
   if (!orderId) return NextResponse.json({ error: "orderId required" }, { status: 400 });
 
-  const { data, error } = await supabase
+  // Completing an order credits the driver, so it must be paid for first.
+  const admin = createAdminClient();
+  const { data: current } = await admin
+    .from("orders")
+    .select("total, service_fee, payment_status, items_payment_status")
+    .eq("id", orderId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!current) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+  const itemsDue = Number(current.total ?? 0) - Number(current.service_fee ?? 500) > 0;
+  if (current.payment_status !== "paid" || (itemsDue && current.items_payment_status !== "paid")) {
+    return NextResponse.json({ error: "Please complete payment before confirming" }, { status: 402 });
+  }
+
+  const { data, error } = await admin
     .from("orders")
     .update({ status: "completed" })
     .eq("id", orderId)
@@ -24,7 +39,6 @@ export async function POST(req: NextRequest) {
   if (!data) return NextResponse.json({ error: "Order not found or already completed" }, { status: 404 });
 
   // Notify the driver
-  const admin = createAdminClient();
   const { data: order } = await admin
     .from("orders")
     .select("driver_id, order_type, drivers(auth_user_id)")
